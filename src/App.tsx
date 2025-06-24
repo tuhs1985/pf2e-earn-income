@@ -94,7 +94,7 @@ export default function App() {
               </ol>
               <p>
                 <em>
-                  In both cases, the total results entered should not exceed the number of downtime days.
+                  The total results entered should not exceed the number of downtime days.
                 </em>
               </p>
             </div>
