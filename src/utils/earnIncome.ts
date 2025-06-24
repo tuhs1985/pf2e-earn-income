@@ -128,20 +128,24 @@ function formatMMDD(date: Date): string {
   return `${date.getMonth() + 1}`.padStart(2, "0") + "/" + `${date.getDate()}`.padStart(2, "0");
 }
 
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function calculateStartDate(endDate: string, days: number): string {
-  const end = new Date(endDate);
+  const end = parseLocalDate(endDate);
   if (isNaN(end.getTime()) || days <= 0) return "";
   const start = new Date(end);
   start.setDate(end.getDate() - (days - 1));
   return formatMMDD(start);
 }
-
 export function buildDiscordSummary(data: DiscordSummaryInput): string {
   const dc = T.find(r => r.level === data.taskLevel)?.dc ?? 0;
   const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, data.counts, data.hasExperiencedProfessional));
   const { counts } = data;
   const startDate = calculateStartDate(data.endDate, data.days);
-  const endDate = formatMMDD(new Date(data.endDate));
+  const endDate = formatMMDD(parseLocalDate(data.endDate));
 
   const adjustedFailures = counts.failure + (data.hasExperiencedProfessional ? counts.criticalFailure : 0);
   const remainingCritFailures = data.hasExperiencedProfessional ? 0 : counts.criticalFailure;
