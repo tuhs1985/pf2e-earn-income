@@ -184,6 +184,25 @@ export default function App() {
           {output}
         </pre>
       )}
-    </div>
-  );
+
+      {/* Add footer here */}
+      <footer
+        style={{
+          marginTop: "2rem",
+          textAlign: "center",
+          fontSize: "0.9rem",
+          color: "#888",
+        }}
+      >
+        <a
+          href="https://github.com/tuhs1985/pf2e-earn-income"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#888", textDecoration: "underline" }}
+        >
+          View on GitHub / Report Issues
+        </a>
+      </footer>
+    </div>  );
 }
+
