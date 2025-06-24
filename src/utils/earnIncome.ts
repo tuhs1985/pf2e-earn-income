@@ -146,17 +146,34 @@ export function buildDiscordSummary(data: DiscordSummaryInput): string {
   const adjustedFailures = counts.failure + (data.hasExperiencedProfessional ? counts.criticalFailure : 0);
   const remainingCritFailures = data.hasExperiencedProfessional ? 0 : counts.criticalFailure;
 
+  // Conditionally include result counts only if greater than zero
+  const resultsArray = [];
+  if (counts.criticalSuccess > 0) {
+    resultsArray.push(`${counts.criticalSuccess} × Critical Successes`);
+  }
+  if (counts.success > 0) {
+    resultsArray.push(`${counts.success} × Successes`);
+  }
+  if (adjustedFailures > 0) {
+    resultsArray.push(`${adjustedFailures} × Failures`);
+  }
+  if (remainingCritFailures > 0) {
+    resultsArray.push(`${remainingCritFailures} × Critical Failures`);
+  }
+  const resultsLine = resultsArray.length > 0
+    ? `**Results:** ${resultsArray.join(", ")}`
+    : `**Results:** None`;
+
   return [
     `**Character:** ${data.character}`,
     `**Days:** ${startDate} - ${endDate}`,
     `**Skill Used:** ${data.skill}`,
     `> *${data.description}*`,
     `**Task Level Attempted:** ${capitalize(data.proficiency)} Level ${data.taskLevel}; **DC** ${dc}`,
-    `**Results:** ${counts.criticalSuccess} × Critical Successes, ${counts.success} × Successes, ${adjustedFailures} × Failures, ${remainingCritFailures} × Critical Failures`,
+    resultsLine,
     `**Link:** ${data.rollsLink}`,
     `**Money Earned:** ${money}`,
     data.hasExperiencedProfessional ? `*Experienced Professional applied*` : undefined,
   ].filter(Boolean).join("\n");
 }
-
 function capitalize(s: string): string { return s.slice(0,1).toUpperCase() + s.slice(1); }
