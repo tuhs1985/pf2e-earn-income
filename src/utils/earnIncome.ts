@@ -92,17 +92,22 @@ export function totalEarnings(level: number, prof: Proficiency, counts: DayResul
   earnings += counts.criticalSuccess * dailyEarnings(level, prof, "criticalSuccess");
   earnings += counts.success * dailyEarnings(level, prof, "success");
 
+  const failureEarnings = dailyEarnings(level, prof, "failure");
+  const isExpertOrHigher = (prof === "expert" || prof === "master" || prof === "legendary");
+
   if (hasEP) {
-    const upgraded = counts.criticalFailure;
-    earnings += counts.failure * dailyEarnings(level, prof, "failure");
-    const epFailureEarnings = dailyEarnings(level, prof, "failure");
-    if (prof === "expert") {
-      earnings += upgraded * epFailureEarnings * 2; // double only the upgraded ones
+    // Upgraded critical failures: always single failure payout, never doubled
+    earnings += counts.criticalFailure * failureEarnings;
+    // Original failures: doubled only for expert or higher
+    if (isExpertOrHigher) {
+      earnings += counts.failure * failureEarnings * 2;
     } else {
-      earnings += upgraded * epFailureEarnings;
+      earnings += counts.failure * failureEarnings;
     }
   } else {
-    earnings += counts.failure * dailyEarnings(level, prof, "failure");
+    // No EP: all failures are paid as single failures, never doubled
+    earnings += counts.failure * failureEarnings;
+    // Critical failures earn nothing
   }
 
   return earnings;
