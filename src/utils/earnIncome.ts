@@ -87,32 +87,54 @@ export interface DiscordSummaryInput {
   hasExperiencedProfessional?: boolean;
 }
 
-export function totalEarnings(level: number, prof: Proficiency, counts: DayResultCounts, hasEP = false): number {
+export function totalEarnings(
+  level: number,
+  prof: Proficiency,
+  counts: DayResultCounts,
+  hasEP = false,
+  days?: number // Optional: for 'single result uses days' logic
+): number {
+  // Find which result types are nonzero
+  const resultKeys: Result[] = ["criticalSuccess", "success", "failure", "criticalFailure"];
+  const nonzero = resultKeys.filter(key => counts[key] > 0);
+
+  let adjustedCounts = { ...counts };
+
+  // If exactly one result type is nonzero, and days is provided and > 0, use days for that result type
+  if (nonzero.length === 1 && days && days > 0) {
+    adjustedCounts = {
+      criticalSuccess: 0,
+      success: 0,
+      failure: 0,
+      criticalFailure: 0,
+      [nonzero[0]]: days,
+    };
+  }
+
   let earnings = 0;
-  earnings += counts.criticalSuccess * dailyEarnings(level, prof, "criticalSuccess");
-  earnings += counts.success * dailyEarnings(level, prof, "success");
+  earnings += adjustedCounts.criticalSuccess * dailyEarnings(level, prof, "criticalSuccess");
+  earnings += adjustedCounts.success * dailyEarnings(level, prof, "success");
 
   const failureEarnings = dailyEarnings(level, prof, "failure");
   const isExpertOrHigher = (prof === "expert" || prof === "master" || prof === "legendary");
 
   if (hasEP) {
     // Upgraded critical failures: always single failure payout, never doubled
-    earnings += counts.criticalFailure * failureEarnings;
+    earnings += adjustedCounts.criticalFailure * failureEarnings;
     // Original failures: doubled only for expert or higher
     if (isExpertOrHigher) {
-      earnings += counts.failure * failureEarnings * 2;
+      earnings += adjustedCounts.failure * failureEarnings * 2;
     } else {
-      earnings += counts.failure * failureEarnings;
+      earnings += adjustedCounts.failure * failureEarnings;
     }
   } else {
     // No EP: all failures are paid as single failures, never doubled
-    earnings += counts.failure * failureEarnings;
+    earnings += adjustedCounts.failure * failureEarnings;
     // Critical failures earn nothing
   }
 
   return earnings;
 }
-
 function copperToString(cpValue: number): string {
   const gpPart = Math.floor(cpValue / 100);
   const spPart = Math.floor((cpValue % 100) / 10);
@@ -142,7 +164,7 @@ function calculateStartDate(endDate: string, days: number): string {
 }
 export function buildDiscordSummary(data: DiscordSummaryInput): string {
   const dc = T.find(r => r.level === data.taskLevel)?.dc ?? 0;
-  const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, data.counts, data.hasExperiencedProfessional));
+  const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, data.counts, data.hasExperiencedProfessional, data.days));
   const { counts } = data;
   const startDate = calculateStartDate(data.endDate, data.days);
   const endDate = formatMMDD(parseLocalDate(data.endDate));

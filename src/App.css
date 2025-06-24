@@ -59,6 +59,31 @@ h1 {
   }
 }
 
+.instructions-container {
+  margin-bottom: 1em;
+  background: var(--card-background);
+  color: var(--card-foreground);
+  border-radius: 6px;
+  padding: 1em;
+  transition: background 0.3s, color 0.3s;
+}
+
+.instructions-toggle {
+  background: var(--background);
+  color: var(--foreground);
+  border: none;
+  padding: 0.5em 1em;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 0.5em;
+  transition: background 0.3s, color 0.3s;
+}
+
+.instructions-content {
+  margin-top: 0.5em;
+}
+
 form.form-card {
   background: #262626;
   padding: 1.25rem;
