@@ -164,7 +164,7 @@ function calculateStartDate(endDate: string, days: number): string {
 }
 export function buildDiscordSummary(data: DiscordSummaryInput): string {
   const dc = T.find(r => r.level === data.taskLevel)?.dc ?? 0;
-  const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, data.counts, data.hasExperiencedProfessional, data.days));
+  const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, data.counts, data.hasExperiencedProfessional));
   const { counts } = data;
   const startDate = calculateStartDate(data.endDate, data.days);
   const endDate = formatMMDD(parseLocalDate(data.endDate));
