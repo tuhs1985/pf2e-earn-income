@@ -35,12 +35,6 @@ h1 {
   flex-direction: column;
 }
 
-@media (max-width: 500px) {
-  .counts-row {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-}
 .pair-row {
   display: flex;
   gap: 1rem;
@@ -52,7 +46,12 @@ h1 {
   flex-direction: column;
 }
 
-@media (max-width: 500px) {
+/* Responsive: switch to column only on small screens (match crafting tool) */
+@media (max-width: 400px) {
+  .counts-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
   .pair-row {
     flex-direction: column;
     gap: 0.5rem;
