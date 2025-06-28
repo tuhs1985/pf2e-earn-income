@@ -70,6 +70,12 @@ export default function App() {
   return (
     <div className="app-container">
       <div className="inner-container">
+        <a
+          href="https://tools.tuhsrpg.com/"
+          className="return-btn"
+        >
+          &larr; Return to Hub
+        </a>
         <h1>PF2e Earn Income Generator</h1>
 		        <div className="instructions-container">
           <button
