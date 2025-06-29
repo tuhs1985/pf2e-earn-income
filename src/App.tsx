@@ -9,19 +9,19 @@ function getTodayDateString(): string {
 }
 
 export default function App() {
-  const [data, setData] = useState<DiscordSummaryInput & { days: number; hasExperiencedProfessional: boolean }>({
+  const [data, setData] = useState<DiscordSummaryInput & { days: string; hasExperiencedProfessional: boolean }>({
     character: "",
     endDate: getTodayDateString(),
-    days: 7,
+    days: "",
     skill: "",
     description: "",
-    taskLevel: 0,
+    taskLevel: "",
     proficiency: "trained",
     counts: {
-      criticalSuccess: 0,
-      success: 0,
-      failure: 0,
-      criticalFailure: 0,
+      criticalSuccess: "",
+      success: "",
+      failure: "",
+      criticalFailure: "",
     },
     rollsLink: "",
     hasExperiencedProfessional: false,
@@ -49,23 +49,48 @@ export default function App() {
     data.counts.failure +
     data.counts.criticalFailure;
 
-  const generate = () => {
-    setError(""); // Clear any previous errors
-    const totalResults = getTotalResults();
-    if (totalResults > data.days) {
-      setError(
-        `The sum of all results (${totalResults}) cannot exceed the number of downtime days (${data.days}).`
-      );
-      setOutput(""); // Optionally clear output if invalid
-      return;
+const generate = () => {
+  setError(""); // Clear any previous errors
+
+  // Convert string fields to numbers where necessary
+  const safeData = {
+    ...data,
+    days: data.days === "" ? 1 : Number(data.days),
+    taskLevel: data.taskLevel === "" ? 0 : Number(data.taskLevel),
+    counts: {
+      criticalSuccess: data.counts.criticalSuccess === "" ? 0 : Number(data.counts.criticalSuccess),
+      success: data.counts.success === "" ? 0 : Number(data.counts.success),
+      failure: data.counts.failure === "" ? 0 : Number(data.counts.failure),
+      criticalFailure: data.counts.criticalFailure === "" ? 0 : Number(data.counts.criticalFailure),
     }
-    const summary = buildDiscordSummary(data);
+  };
+
+  const totalResults =
+    safeData.counts.criticalSuccess +
+    safeData.counts.success +
+    safeData.counts.failure +
+    safeData.counts.criticalFailure;
+
+  if (totalResults > safeData.days) {
+    setError(
+      `The sum of all results (${totalResults}) cannot exceed the number of downtime days (${safeData.days}).`
+    );
+    setOutput("");
+    return;
+  }
+
+  try {
+    const summary = buildDiscordSummary(safeData);
     setOutput(summary);
     navigator.clipboard.writeText(summary).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  };
+  } catch (err: any) {
+    setError(err.message || "An error occurred while generating the summary.");
+    setOutput("");
+  }
+};
 
   return (
     <div className="app-container">
@@ -114,7 +139,7 @@ export default function App() {
               type="text"
               value={data.character}
               onChange={e => handleChange("character", e.target.value)}
-              autoComplete="off"
+			  placeholder="Bob the Barbarian"
             />
           </div>
 			<div className="form-row">
@@ -125,7 +150,8 @@ export default function App() {
 				  type="number"
 				  min={1}
 				  value={data.days || ""}
-				  onChange={e => handleChange("days", Number(e.target.value))}
+				  onChange={e => handleChange("days", (e.target.value))}
+				  placeholder="7"
 				/>
 			  </div>
 			  <div className="pair-field">
@@ -145,7 +171,7 @@ export default function App() {
               type="text"
               value={data.skill}
               onChange={e => handleChange("skill", e.target.value)}
-              autoComplete="off"
+			  placeholder="Barbarian Lore"
             />
           </div>
           <div>
@@ -154,6 +180,7 @@ export default function App() {
               id="description"
               value={data.description}
               onChange={e => handleChange("description", e.target.value)}
+			  placeholder="Tell big heaping Barbarian Stories I did"
             />
           </div>
 			<div className="form-row">
@@ -166,7 +193,7 @@ export default function App() {
 					max={20}
 					value={data.taskLevel}
 					onChange={e => {
-					  let value = Number(e.target.value);
+					  let value = (e.target.value);
 					  // Clamp value between 0 and 20
 					  if (isNaN(value) || e.target.value === "") {
 						handleChange("taskLevel", "");
@@ -176,6 +203,7 @@ export default function App() {
 						handleChange("taskLevel", value);
 					  }
 					}}
+					placeholder="0"
 				  />
 				</div>
 			  <div className="pair-field">
@@ -201,7 +229,8 @@ export default function App() {
                 type="number"
                 min={0}
                 value={data.counts.criticalSuccess}
-                onChange={e => handleCountsChange("criticalSuccess", Number(e.target.value))}
+                onChange={e => handleCountsChange("criticalSuccess", (e.target.value))}
+				placeholder="0"
               />
             </div>
             <div className="counts-field">
@@ -211,7 +240,8 @@ export default function App() {
                 type="number"
                 min={0}
                 value={data.counts.success}
-                onChange={e => handleCountsChange("success", Number(e.target.value))}
+                onChange={e => handleCountsChange("success", (e.target.value))}
+				placeholder="0"
               />
             </div>
           </div>
@@ -223,7 +253,8 @@ export default function App() {
                 type="number"
                 min={0}
                 value={data.counts.failure}
-                onChange={e => handleCountsChange("failure", Number(e.target.value))}
+                onChange={e => handleCountsChange("failure", (e.target.value))}
+				placeholder="0"
               />
             </div>
             <div className="counts-field">
@@ -233,7 +264,8 @@ export default function App() {
                 type="number"
                 min={0}
                 value={data.counts.criticalFailure}
-                onChange={e => handleCountsChange("criticalFailure", Number(e.target.value))}
+                onChange={e => handleCountsChange("criticalFailure", (e.target.value))}
+				placeholder="0"
               />
             </div>
           </div>
