@@ -1,31 +1,35 @@
 import { useState, useEffect } from "react";
 import { buildDiscordSummary } from "./utils/earnIncome";
-import type { DiscordSummaryInput, DayResultCounts } from "./utils/earnIncome";
+import type { DiscordSummaryInput, DayResultCounts, Proficiency } from "./utils/earnIncome";
 import "./App.css";
 
-// Hook to detect if running as an installed PWA (standalone/fullscreen)
+// PWA detection (matches Crafting App logic)
 function useIsStandalone() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     const checkStandalone = () =>
-      window.matchMedia?.('(display-mode: standalone)').matches ||
-      window.matchMedia?.('(display-mode: fullscreen)').matches ||
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
       // @ts-ignore
       window.navigator.standalone === true;
 
     setIsStandalone(checkStandalone());
 
-    const mqStandalone = window.matchMedia('(display-mode: standalone)');
-    const mqFullscreen = window.matchMedia('(display-mode: fullscreen)');
+    // Listen for changes to display-mode
+    const mq = window.matchMedia('(display-mode: standalone)');
     const handler = () => setIsStandalone(checkStandalone());
-
-    mqStandalone.addEventListener?.('change', handler);
-    mqFullscreen.addEventListener?.('change', handler);
-
+    if (mq.addEventListener) {
+      mq.addEventListener('change', handler);
+    } else if (mq.addListener) {
+      mq.addListener(handler);
+    }
     return () => {
-      mqStandalone.removeEventListener?.('change', handler);
-      mqFullscreen.removeEventListener?.('change', handler);
+      if (mq.removeEventListener) {
+        mq.removeEventListener('change', handler);
+      } else if (mq.removeListener) {
+        mq.removeListener(handler);
+      }
     };
   }, []);
 
@@ -38,81 +42,68 @@ function getTodayDateString(): string {
 }
 
 export default function App() {
-  const [data, setData] = useState<DiscordSummaryInput & { days: string; hasExperiencedProfessional: boolean }>({
-    character: "",
-    endDate: getTodayDateString(),
-    days: "",
-    skill: "",
-    description: "",
-    taskLevel: "",
-    proficiency: "trained",
-    counts: {
-      criticalSuccess: "",
-      success: "",
-      failure: "",
-      criticalFailure: "",
-    },
-    rollsLink: "",
-    hasExperiencedProfessional: false,
-  });
+  // Main state, broken out for clarity (parity with Crafting App)
+  const [character, setCharacter] = useState("");
+  const [endDate, setEndDate] = useState(getTodayDateString());
+  const [days, setDays] = useState<string>("");
+  const [skill, setSkill] = useState("");
+  const [description, setDescription] = useState("");
+  const [taskLevel, setTaskLevel] = useState<string>("");
+  const [proficiency, setProficiency] = useState<Proficiency>("trained");
+  const [criticalSuccess, setCriticalSuccess] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
+  const [failure, setFailure] = useState<string>("");
+  const [criticalFailure, setCriticalFailure] = useState<string>("");
+  const [rollsLink, setRollsLink] = useState("");
+  const [hasExperiencedProfessional, setHasExperiencedProfessional] = useState(false);
 
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState(""); // New state for error messages
+  const [error, setError] = useState("");
   const [showInstructions, setShowInstructions] = useState(false);
 
   // PWA standalone detection
   const isStandalone = useIsStandalone();
 
-  const handleChange = (key: keyof typeof data, value: any) => {
-    setData({ ...data, [key]: value });
-  };
+  // Helper to package the input for the utility
+  const buildInput = (): DiscordSummaryInput => ({
+    character,
+    endDate,
+    days: days === "" ? 1 : Number(days),
+    skill,
+    description,
+    taskLevel: taskLevel === "" ? 0 : Number(taskLevel),
+    proficiency,
+    counts: {
+      criticalSuccess: criticalSuccess === "" ? 0 : Number(criticalSuccess),
+      success: success === "" ? 0 : Number(success),
+      failure: failure === "" ? 0 : Number(failure),
+      criticalFailure: criticalFailure === "" ? 0 : Number(criticalFailure),
+    },
+    rollsLink,
+    hasExperiencedProfessional,
+  });
 
-  const handleCountsChange = (key: keyof DayResultCounts, value: number) => {
-    setData({
-      ...data,
-      counts: { ...data.counts, [key]: value },
-    });
-  };
-
-  const getTotalResults = () =>
-    data.counts.criticalSuccess +
-    data.counts.success +
-    data.counts.failure +
-    data.counts.criticalFailure;
-
-  const generate = () => {
-    setError(""); // Clear any previous errors
-
-    // Convert string fields to numbers where necessary
-    const safeData = {
-      ...data,
-      days: data.days === "" ? 1 : Number(data.days),
-      taskLevel: data.taskLevel === "" ? 0 : Number(data.taskLevel),
-      counts: {
-        criticalSuccess: data.counts.criticalSuccess === "" ? 0 : Number(data.counts.criticalSuccess),
-        success: data.counts.success === "" ? 0 : Number(data.counts.success),
-        failure: data.counts.failure === "" ? 0 : Number(data.counts.failure),
-        criticalFailure: data.counts.criticalFailure === "" ? 0 : Number(data.counts.criticalFailure),
-      }
-    };
-
+  // Generate summary
+  const handleGenerate = () => {
+    setError(""); // Clear previous errors
+    const safeInput = buildInput();
     const totalResults =
-      safeData.counts.criticalSuccess +
-      safeData.counts.success +
-      safeData.counts.failure +
-      safeData.counts.criticalFailure;
+      safeInput.counts.criticalSuccess +
+      safeInput.counts.success +
+      safeInput.counts.failure +
+      safeInput.counts.criticalFailure;
 
-    if (totalResults > safeData.days) {
+    if (totalResults > safeInput.days) {
       setError(
-        `The sum of all results (${totalResults}) cannot exceed the number of downtime days (${safeData.days}).`
+        `The sum of all results (${totalResults}) cannot exceed the number of downtime days (${safeInput.days}).`
       );
       setOutput("");
       return;
     }
 
     try {
-      const summary = buildDiscordSummary(safeData);
+      const summary = buildDiscordSummary(safeInput);
       setOutput(summary);
       navigator.clipboard.writeText(summary).then(() => {
         setCopied(true);
@@ -127,7 +118,7 @@ export default function App() {
   return (
     <div className="app-container">
       <div className="inner-container">
-        {/* Only show "Return to Hub" when NOT running as an installed PWA */}
+        {/* "Return to Hub" only shows if not in standalone PWA mode */}
         {!isStandalone && (
           <a
             href="https://tools.tuhsrpg.com/"
@@ -137,7 +128,7 @@ export default function App() {
           </a>
         )}
         <h1>PF2e Earn Income Generator</h1>
-        <div className="instructions-container">
+        <div className="instructions-container" style={{marginBottom: "1em"}}>
           <button
             type="button"
             className="instructions-toggle"
@@ -148,7 +139,7 @@ export default function App() {
             {showInstructions ? "Hide Instructions" : "Show Instructions"}
           </button>
           {showInstructions && (
-            <div className="instructions-content" id="instructions-content">
+            <div className="instructions-content" id="instructions-content" style={{marginTop: "1em"}}>
               <h2>How to Use</h2>
               <ol>
                 <li>
@@ -166,166 +157,172 @@ export default function App() {
             </div>
           )}
         </div>
-        <form className="form-card" onSubmit={e => { e.preventDefault(); generate(); }}>
-          <div>
-            <label htmlFor="character">Character:</label>
+        <form
+          className="form-card"
+          onSubmit={e => {
+            e.preventDefault();
+            handleGenerate();
+          }}
+          autoComplete="off"
+        >
+          {/* Character Name */}
+          <label>
+            Character Name
             <input
-              id="character"
               type="text"
-              value={data.character}
-              onChange={e => handleChange("character", e.target.value)}
+              value={character}
+              onChange={e => setCharacter(e.target.value)}
               placeholder="Bob the Barbarian"
             />
-          </div>
+          </label>
+
+          {/* Downtime Days and End Date, same line */}
           <div className="form-row">
-            <div className="pair-field">
-              <label htmlFor="days">Downtime Days:</label>
+            <label>
+              Downtime Days
               <input
-                id="days"
                 type="number"
                 min={1}
-                value={data.days || ""}
-                onChange={e => handleChange("days", (e.target.value))}
+                value={days}
+                onChange={e => setDays(e.target.value)}
                 placeholder="7"
               />
-            </div>
-            <div className="pair-field">
-              <label htmlFor="endDate">End Date:</label>
+            </label>
+            <label>
+              End Date
               <input
-                id="endDate"
                 type="date"
-                value={data.endDate}
-                onChange={e => handleChange("endDate", e.target.value)}
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
               />
-            </div>
+            </label>
           </div>
-          <div>
-            <label htmlFor="skill">Skill Used:</label>
+
+          {/* Skill Used */}
+          <label>
+            Skill Used
             <input
-              id="skill"
               type="text"
-              value={data.skill}
-              onChange={e => handleChange("skill", e.target.value)}
+              value={skill}
+              onChange={e => setSkill(e.target.value)}
               placeholder="Barbarian Lore"
             />
-          </div>
-          <div>
-            <label htmlFor="description">Description:</label>
+          </label>
+
+          {/* Description */}
+          <label>
+            Description
             <textarea
-              id="description"
-              value={data.description}
-              onChange={e => handleChange("description", e.target.value)}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
               placeholder="Tell big heaping Barbarian Stories I did"
             />
-          </div>
+          </label>
+
+          {/* Task Level and Proficiency, same line */}
           <div className="form-row">
-            <div className="pair-field">
-              <label htmlFor="taskLevel">Task Level:</label>
+            <label>
+              Task Level
               <input
-                id="taskLevel"
                 type="number"
                 min={0}
                 max={20}
-                value={data.taskLevel}
+                value={taskLevel}
                 onChange={e => {
-                  let value = (e.target.value);
-                  // Clamp value between 0 and 20
-                  if (isNaN(value) || e.target.value === "") {
-                    handleChange("taskLevel", "");
-                  } else {
-                    if (value < 0) value = 0;
-                    if (value > 20) value = 20;
-                    handleChange("taskLevel", value);
+                  let value = e.target.value;
+                  if (value === "") setTaskLevel("");
+                  else {
+                    let num = Number(value);
+                    if (isNaN(num)) setTaskLevel("");
+                    else setTaskLevel(Math.max(0, Math.min(num, 20)).toString());
                   }
                 }}
                 placeholder="0"
               />
-            </div>
-            <div className="pair-field">
-              <label htmlFor="proficiency">Proficiency:</label>
+            </label>
+            <label>
+              Proficiency
               <select
-                id="proficiency"
-                value={data.proficiency}
-                onChange={e => handleChange("proficiency", e.target.value)}
+                value={proficiency}
+                onChange={e => setProficiency(e.target.value as Proficiency)}
               >
                 <option value="trained">Trained</option>
                 <option value="expert">Expert</option>
                 <option value="master">Master</option>
                 <option value="legendary">Legendary</option>
               </select>
-            </div>
-          </div>
-          {/* Grouped result fields */}
-          <div className="form-row">
-            <div className="counts-field">
-              <label htmlFor="criticalSuccess">Critical Successes:</label>
-              <input
-                id="criticalSuccess"
-                type="number"
-                min={0}
-                value={data.counts.criticalSuccess}
-                onChange={e => handleCountsChange("criticalSuccess", (e.target.value))}
-                placeholder="0"
-              />
-            </div>
-            <div className="counts-field">
-              <label htmlFor="success">Successes:</label>
-              <input
-                id="success"
-                type="number"
-                min={0}
-                value={data.counts.success}
-                onChange={e => handleCountsChange("success", (e.target.value))}
-                placeholder="0"
-              />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="counts-field">
-              <label htmlFor="failure">Failures:</label>
-              <input
-                id="failure"
-                type="number"
-                min={0}
-                value={data.counts.failure}
-                onChange={e => handleCountsChange("failure", (e.target.value))}
-                placeholder="0"
-              />
-            </div>
-            <div className="counts-field">
-              <label htmlFor="criticalFailure">Critical Failures:</label>
-              <input
-                id="criticalFailure"
-                type="number"
-                min={0}
-                value={data.counts.criticalFailure}
-                onChange={e => handleCountsChange("criticalFailure", (e.target.value))}
-                placeholder="0"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="rollsLink">Discord Rolls Link:</label>
-            <input
-              id="rollsLink"
-              type="text"
-              value={data.rollsLink}
-              onChange={e => handleChange("rollsLink", e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-          <div className="checkbox-row">
-            <input
-              id="hasExperiencedProfessional"
-              type="checkbox"
-              checked={data.hasExperiencedProfessional}
-              onChange={e => handleChange("hasExperiencedProfessional", e.target.checked)}
-            />
-            <label htmlFor="hasExperiencedProfessional">
-              Experienced Professional (Lore only)
             </label>
           </div>
+
+          {/* Critical Successes and Successes, same line */}
+          <div className="form-row">
+            <label>
+              Critical Successes
+              <input
+                type="number"
+                min={0}
+                value={criticalSuccess}
+                onChange={e => setCriticalSuccess(e.target.value)}
+                placeholder="0"
+              />
+            </label>
+            <label>
+              Successes
+              <input
+                type="number"
+                min={0}
+                value={success}
+                onChange={e => setSuccess(e.target.value)}
+                placeholder="0"
+              />
+            </label>
+          </div>
+
+          {/* Failures and Critical Failures, same line */}
+          <div className="form-row">
+            <label>
+              Failures
+              <input
+                type="number"
+                min={0}
+                value={failure}
+                onChange={e => setFailure(e.target.value)}
+                placeholder="0"
+              />
+            </label>
+            <label>
+              Critical Failures
+              <input
+                type="number"
+                min={0}
+                value={criticalFailure}
+                onChange={e => setCriticalFailure(e.target.value)}
+                placeholder="0"
+              />
+            </label>
+          </div>
+
+          {/* Discord Rolls Link */}
+          <label>
+            Discord Rolls Link
+            <input
+              type="text"
+              value={rollsLink}
+              onChange={e => setRollsLink(e.target.value)}
+              autoComplete="off"
+            />
+          </label>
+
+          {/* Experienced Professional */}
+          <label className="vertical-label">
+            <input
+              type="checkbox"
+              checked={hasExperiencedProfessional}
+              onChange={e => setHasExperiencedProfessional(e.target.checked)}
+            />
+            Experienced Professional (Lore only)
+          </label>
+
           <button type="submit">Generate Summary</button>
         </form>
 
