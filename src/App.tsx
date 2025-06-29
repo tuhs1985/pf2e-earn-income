@@ -1,7 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { buildDiscordSummary } from "./utils/earnIncome";
 import type { DiscordSummaryInput, DayResultCounts } from "./utils/earnIncome";
 import "./App.css";
+
+// Hook to detect if running as an installed PWA (standalone/fullscreen)
+function useIsStandalone() {
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const checkStandalone = () =>
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.matchMedia?.('(display-mode: fullscreen)').matches ||
+      // @ts-ignore
+      window.navigator.standalone === true;
+
+    setIsStandalone(checkStandalone());
+
+    const mqStandalone = window.matchMedia('(display-mode: standalone)');
+    const mqFullscreen = window.matchMedia('(display-mode: fullscreen)');
+    const handler = () => setIsStandalone(checkStandalone());
+
+    mqStandalone.addEventListener?.('change', handler);
+    mqFullscreen.addEventListener?.('change', handler);
+
+    return () => {
+      mqStandalone.removeEventListener?.('change', handler);
+      mqFullscreen.removeEventListener?.('change', handler);
+    };
+  }, []);
+
+  return isStandalone;
+}
 
 function getTodayDateString(): string {
   const today = new Date();
@@ -31,7 +60,10 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(""); // New state for error messages
   const [showInstructions, setShowInstructions] = useState(false);
-  
+
+  // PWA standalone detection
+  const isStandalone = useIsStandalone();
+
   const handleChange = (key: keyof typeof data, value: any) => {
     setData({ ...data, [key]: value });
   };
@@ -49,60 +81,63 @@ export default function App() {
     data.counts.failure +
     data.counts.criticalFailure;
 
-const generate = () => {
-  setError(""); // Clear any previous errors
+  const generate = () => {
+    setError(""); // Clear any previous errors
 
-  // Convert string fields to numbers where necessary
-  const safeData = {
-    ...data,
-    days: data.days === "" ? 1 : Number(data.days),
-    taskLevel: data.taskLevel === "" ? 0 : Number(data.taskLevel),
-    counts: {
-      criticalSuccess: data.counts.criticalSuccess === "" ? 0 : Number(data.counts.criticalSuccess),
-      success: data.counts.success === "" ? 0 : Number(data.counts.success),
-      failure: data.counts.failure === "" ? 0 : Number(data.counts.failure),
-      criticalFailure: data.counts.criticalFailure === "" ? 0 : Number(data.counts.criticalFailure),
+    // Convert string fields to numbers where necessary
+    const safeData = {
+      ...data,
+      days: data.days === "" ? 1 : Number(data.days),
+      taskLevel: data.taskLevel === "" ? 0 : Number(data.taskLevel),
+      counts: {
+        criticalSuccess: data.counts.criticalSuccess === "" ? 0 : Number(data.counts.criticalSuccess),
+        success: data.counts.success === "" ? 0 : Number(data.counts.success),
+        failure: data.counts.failure === "" ? 0 : Number(data.counts.failure),
+        criticalFailure: data.counts.criticalFailure === "" ? 0 : Number(data.counts.criticalFailure),
+      }
+    };
+
+    const totalResults =
+      safeData.counts.criticalSuccess +
+      safeData.counts.success +
+      safeData.counts.failure +
+      safeData.counts.criticalFailure;
+
+    if (totalResults > safeData.days) {
+      setError(
+        `The sum of all results (${totalResults}) cannot exceed the number of downtime days (${safeData.days}).`
+      );
+      setOutput("");
+      return;
+    }
+
+    try {
+      const summary = buildDiscordSummary(safeData);
+      setOutput(summary);
+      navigator.clipboard.writeText(summary).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    } catch (err: any) {
+      setError(err.message || "An error occurred while generating the summary.");
+      setOutput("");
     }
   };
-
-  const totalResults =
-    safeData.counts.criticalSuccess +
-    safeData.counts.success +
-    safeData.counts.failure +
-    safeData.counts.criticalFailure;
-
-  if (totalResults > safeData.days) {
-    setError(
-      `The sum of all results (${totalResults}) cannot exceed the number of downtime days (${safeData.days}).`
-    );
-    setOutput("");
-    return;
-  }
-
-  try {
-    const summary = buildDiscordSummary(safeData);
-    setOutput(summary);
-    navigator.clipboard.writeText(summary).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  } catch (err: any) {
-    setError(err.message || "An error occurred while generating the summary.");
-    setOutput("");
-  }
-};
 
   return (
     <div className="app-container">
       <div className="inner-container">
-        <a
-          href="https://tools.tuhsrpg.com/"
-          className="return-btn"
-        >
-          &larr; Return to Hub
-        </a>
+        {/* Only show "Return to Hub" when NOT running as an installed PWA */}
+        {!isStandalone && (
+          <a
+            href="https://tools.tuhsrpg.com/"
+            className="return-btn"
+          >
+            &larr; Return to Hub
+          </a>
+        )}
         <h1>PF2e Earn Income Generator</h1>
-		        <div className="instructions-container">
+        <div className="instructions-container">
           <button
             type="button"
             className="instructions-toggle"
@@ -139,31 +174,31 @@ const generate = () => {
               type="text"
               value={data.character}
               onChange={e => handleChange("character", e.target.value)}
-			  placeholder="Bob the Barbarian"
+              placeholder="Bob the Barbarian"
             />
           </div>
-			<div className="form-row">
-			  <div className="pair-field">
-				<label htmlFor="days">Downtime Days:</label>
-				<input
-				  id="days"
-				  type="number"
-				  min={1}
-				  value={data.days || ""}
-				  onChange={e => handleChange("days", (e.target.value))}
-				  placeholder="7"
-				/>
-			  </div>
-			  <div className="pair-field">
-				<label htmlFor="endDate">End Date:</label>
-				<input
-				  id="endDate"
-				  type="date"
-				  value={data.endDate}
-				  onChange={e => handleChange("endDate", e.target.value)}
-				/>
-			  </div>
-			</div>
+          <div className="form-row">
+            <div className="pair-field">
+              <label htmlFor="days">Downtime Days:</label>
+              <input
+                id="days"
+                type="number"
+                min={1}
+                value={data.days || ""}
+                onChange={e => handleChange("days", (e.target.value))}
+                placeholder="7"
+              />
+            </div>
+            <div className="pair-field">
+              <label htmlFor="endDate">End Date:</label>
+              <input
+                id="endDate"
+                type="date"
+                value={data.endDate}
+                onChange={e => handleChange("endDate", e.target.value)}
+              />
+            </div>
+          </div>
           <div>
             <label htmlFor="skill">Skill Used:</label>
             <input
@@ -171,7 +206,7 @@ const generate = () => {
               type="text"
               value={data.skill}
               onChange={e => handleChange("skill", e.target.value)}
-			  placeholder="Barbarian Lore"
+              placeholder="Barbarian Lore"
             />
           </div>
           <div>
@@ -180,46 +215,46 @@ const generate = () => {
               id="description"
               value={data.description}
               onChange={e => handleChange("description", e.target.value)}
-			  placeholder="Tell big heaping Barbarian Stories I did"
+              placeholder="Tell big heaping Barbarian Stories I did"
             />
           </div>
-			<div className="form-row">
-				<div className="pair-field">
-				  <label htmlFor="taskLevel">Task Level:</label>
-				  <input
-					id="taskLevel"
-					type="number"
-					min={0}
-					max={20}
-					value={data.taskLevel}
-					onChange={e => {
-					  let value = (e.target.value);
-					  // Clamp value between 0 and 20
-					  if (isNaN(value) || e.target.value === "") {
-						handleChange("taskLevel", "");
-					  } else {
-						if (value < 0) value = 0;
-						if (value > 20) value = 20;
-						handleChange("taskLevel", value);
-					  }
-					}}
-					placeholder="0"
-				  />
-				</div>
-			  <div className="pair-field">
-				<label htmlFor="proficiency">Proficiency:</label>
-				<select
-				  id="proficiency"
-				  value={data.proficiency}
-				  onChange={e => handleChange("proficiency", e.target.value)}
-				>
-				  <option value="trained">Trained</option>
-				  <option value="expert">Expert</option>
-				  <option value="master">Master</option>
-				  <option value="legendary">Legendary</option>
-				</select>
-			  </div>
-			</div>
+          <div className="form-row">
+            <div className="pair-field">
+              <label htmlFor="taskLevel">Task Level:</label>
+              <input
+                id="taskLevel"
+                type="number"
+                min={0}
+                max={20}
+                value={data.taskLevel}
+                onChange={e => {
+                  let value = (e.target.value);
+                  // Clamp value between 0 and 20
+                  if (isNaN(value) || e.target.value === "") {
+                    handleChange("taskLevel", "");
+                  } else {
+                    if (value < 0) value = 0;
+                    if (value > 20) value = 20;
+                    handleChange("taskLevel", value);
+                  }
+                }}
+                placeholder="0"
+              />
+            </div>
+            <div className="pair-field">
+              <label htmlFor="proficiency">Proficiency:</label>
+              <select
+                id="proficiency"
+                value={data.proficiency}
+                onChange={e => handleChange("proficiency", e.target.value)}
+              >
+                <option value="trained">Trained</option>
+                <option value="expert">Expert</option>
+                <option value="master">Master</option>
+                <option value="legendary">Legendary</option>
+              </select>
+            </div>
+          </div>
           {/* Grouped result fields */}
           <div className="form-row">
             <div className="counts-field">
@@ -230,7 +265,7 @@ const generate = () => {
                 min={0}
                 value={data.counts.criticalSuccess}
                 onChange={e => handleCountsChange("criticalSuccess", (e.target.value))}
-				placeholder="0"
+                placeholder="0"
               />
             </div>
             <div className="counts-field">
@@ -241,7 +276,7 @@ const generate = () => {
                 min={0}
                 value={data.counts.success}
                 onChange={e => handleCountsChange("success", (e.target.value))}
-				placeholder="0"
+                placeholder="0"
               />
             </div>
           </div>
@@ -254,7 +289,7 @@ const generate = () => {
                 min={0}
                 value={data.counts.failure}
                 onChange={e => handleCountsChange("failure", (e.target.value))}
-				placeholder="0"
+                placeholder="0"
               />
             </div>
             <div className="counts-field">
@@ -265,7 +300,7 @@ const generate = () => {
                 min={0}
                 value={data.counts.criticalFailure}
                 onChange={e => handleCountsChange("criticalFailure", (e.target.value))}
-				placeholder="0"
+                placeholder="0"
               />
             </div>
           </div>
