@@ -117,7 +117,7 @@ export default function App() {
               autoComplete="off"
             />
           </div>
-			<div className="pair-row">
+			<div className="form-row">
 			  <div className="pair-field">
 				<label htmlFor="days">Downtime Days:</label>
 				<input
@@ -156,7 +156,7 @@ export default function App() {
               onChange={e => handleChange("description", e.target.value)}
             />
           </div>
-			<div className="pair-row">
+			<div className="form-row">
 				<div className="pair-field">
 				  <label htmlFor="taskLevel">Task Level:</label>
 				  <input
@@ -193,7 +193,7 @@ export default function App() {
 			  </div>
 			</div>
           {/* Grouped result fields */}
-          <div className="counts-row">
+          <div className="form-row">
             <div className="counts-field">
               <label htmlFor="criticalSuccess">Critical Successes:</label>
               <input
@@ -215,7 +215,7 @@ export default function App() {
               />
             </div>
           </div>
-          <div className="counts-row">
+          <div className="form-row">
             <div className="counts-field">
               <label htmlFor="failure">Failures:</label>
               <input
