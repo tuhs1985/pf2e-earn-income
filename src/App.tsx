@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { buildDiscordSummary } from "./utils/earnIncome";
 import type { DiscordSummaryInput, DayResultCounts, Proficiency } from "./utils/earnIncome";
 import "./App.css";
@@ -39,6 +39,31 @@ function useIsStandalone() {
 function getTodayDateString(): string {
   const today = new Date();
   return today.toISOString().split("T")[0];
+}
+
+export function ReturnButton() {
+  const [expanded, setExpanded] = useState(false);
+
+  // Only used for touch devices
+  const handleTouchEnd = (e: React.TouchEvent<HTMLAnchorElement>) => {
+    if (!expanded) {
+      e.preventDefault();
+      setExpanded(true);
+    }
+    // If already expanded, allow navigation
+  };
+
+  return (
+    <a
+      href="https://tools.tuhsrpg.com/"
+      className={`return-btn${expanded ? " expanded" : ""}`}
+      onTouchEnd={handleTouchEnd}
+    >
+      <span className="dots">&#8942;</span>
+      <span className="arrow">&larr;</span>
+      <span className="return-text">Return to Hub</span>
+    </a>
+  );
 }
 
 export default function App() {
@@ -118,16 +143,12 @@ export default function App() {
   return (
     <div className="app-container">
       <div className="inner-container">
-        {/* "Return to Hub" only shows if not in standalone PWA mode */}
-        {!isStandalone && (
-          <a
-            href="https://tools.tuhsrpg.com/"
-            className="return-btn"
-          >
-            &larr; Return to Hub
-          </a>
-        )}
-        <h1>PF2e Earn Income Generator</h1>
+		<div className="header-container" style={{ position: "relative" }}>
+		  {!isStandalone && (
+			<ReturnButton />
+		  )}
+		  <h1 style={{ textAlign: "center", margin: 0 }}>PF2e Earn Income Generator</h1>
+		</div>
         <div className="instructions-container" style={{marginBottom: "1em"}}>
           <button
             type="button"
