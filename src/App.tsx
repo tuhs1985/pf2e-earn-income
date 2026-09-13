@@ -13,8 +13,8 @@ function useIsStandalone() {
     const checkStandalone = () =>
       window.matchMedia('(display-mode: standalone)').matches ||
       window.matchMedia('(display-mode: fullscreen)').matches ||
-      // @ts-ignore
-      window.navigator.standalone === true;
+      // Safari exposes this optional property for installed web apps.
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
     setIsStandalone(checkStandalone());
 
@@ -140,8 +140,8 @@ export default function App() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       });
-    } catch (err: any) {
-      setError(err.message || "An error occurred while generating the summary.");
+    } catch (err: unknown) {
+      setError(err instanceof Error && err.message ? err.message : "An error occurred while generating the summary.");
       setOutput("");
     }
   };
@@ -285,10 +285,10 @@ export default function App() {
                 max={20}
                 value={taskLevel}
                 onChange={e => {
-                  let value = e.target.value;
+                  const value = e.target.value;
                   if (value === "") setTaskLevel("");
                   else {
-                    let num = Number(value);
+                    const num = Number(value);
                     if (isNaN(num)) setTaskLevel("");
                     else setTaskLevel(Math.max(0, Math.min(num, 20)).toString());
                   }

@@ -1,6 +1,6 @@
 // PF2e Earn Income automation utility
 // ------------------------------------------------------------
-// This module converts the Earn Income table (CRB p.228) into
+// This module converts the Earn Income table (CRB p.228) into
 // program‑friendly data, calculates payouts for any combination
 // of results, and formats a Discord‑ready summary string.
 
@@ -16,7 +16,7 @@ export interface IncomeTableRow {
 }
 
 // ----- Data --------------------------------------------------
-// 1 cp = 1, 1 sp = 10, 1 gp = 100 (Pathfinder currency ratio)
+// 1 cp = 1, 1 sp = 10, 1 gp = 100 (Pathfinder currency ratio)
 const cp = (c: number) => c;
 const sp = (s: number) => s * 10;
 const gp = (g: number) => g * 100;
