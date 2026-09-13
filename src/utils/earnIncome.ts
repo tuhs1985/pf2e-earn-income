@@ -85,32 +85,42 @@ export interface DiscordSummaryInput {
   counts: DayResultCounts;
   rollsLink: string;
   hasExperiencedProfessional?: boolean;
+  applyOneResultToAllDays?: boolean;
+}
+
+function countsForDays(
+  counts: DayResultCounts,
+  days: number,
+  applyOneResultToAllDays = false
+): DayResultCounts {
+  const resultKeys: Result[] = ["criticalSuccess", "success", "failure", "criticalFailure"];
+  if (!Number.isSafeInteger(days) || days < 1) {
+    throw new Error("Enter a positive whole number of downtime days.");
+  }
+  if (resultKeys.some(key => !Number.isSafeInteger(counts[key]) || counts[key] < 0)) {
+    throw new Error("Result counts must be nonnegative whole numbers.");
+  }
+  const total = resultKeys.reduce((sum, key) => sum + counts[key], 0);
+  if (applyOneResultToAllDays) {
+    if (total !== 1) {
+      throw new Error("To apply one result to all downtime days, enter 1 in exactly one result field and leave the others blank or 0.");
+    }
+    const result = resultKeys.find(key => counts[key] === 1)!;
+    return { ...counts, [result]: days };
+  }
+  if (total !== days) {
+    throw new Error(`Daily result counts (${total}) must equal the number of downtime days (${days}).`);
+  }
+  return { ...counts };
 }
 
 export function totalEarnings(
   level: number,
   prof: Proficiency,
   counts: DayResultCounts,
-  hasEP = false,
-  days?: number // Optional: for 'single result uses days' logic
+  hasEP = false
 ): number {
-  // Find which result types are nonzero
-  const resultKeys: Result[] = ["criticalSuccess", "success", "failure", "criticalFailure"];
-  const nonzero = resultKeys.filter(key => counts[key] > 0);
-
-  let adjustedCounts = { ...counts };
-
-  // If exactly one result type is nonzero, and days is provided and > 0, use days for that result type
-  if (nonzero.length === 1 && days && days > 0) {
-    adjustedCounts = {
-      criticalSuccess: 0,
-      success: 0,
-      failure: 0,
-      criticalFailure: 0,
-      [nonzero[0]]: days,
-    };
-  }
-
+  const adjustedCounts = counts;
   let earnings = 0;
   earnings += adjustedCounts.criticalSuccess * dailyEarnings(level, prof, "criticalSuccess");
   earnings += adjustedCounts.success * dailyEarnings(level, prof, "success");
@@ -146,25 +156,94 @@ function copperToString(cpValue: number): string {
   return parts.join(", ");
 }
 
+export function getTodayDateString(today = new Date()): string {
+  // toISOString() and parsing YYYY-MM-DD as a Date both use UTC.
+  // Build the date input's value directly from the user's local calendar.
+  return `${today.getFullYear()}`.padStart(4, "0") + "-" +
+    `${today.getMonth() + 1}`.padStart(2, "0") + "-" +
+    `${today.getDate()}`.padStart(2, "0");
+}
+
 function formatMMDD(date: Date): string {
   return `${date.getMonth() + 1}`.padStart(2, "0") + "/" + `${date.getDate()}`.padStart(2, "0");
 }
 
-function parseLocalDate(dateStr: string): Date {
+function parseLocalDate(dateStr: string, label = "end date"): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    throw new Error(`Enter a valid ${label}.`);
+  }
   const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  // Local noon avoids midnight clock changes; setFullYear preserves years 1-99.
+  const date = new Date(0);
+  date.setHours(12, 0, 0, 0);
+  date.setFullYear(year, month - 1, day);
+  if (year < 1 || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    throw new Error(`Enter a valid ${label}.`);
+  }
+  return date;
+}
+
+export type PeriodField = "startDate" | "days" | "endDate";
+export interface PeriodState {
+  startDate: string;
+  days: string;
+  endDate: string;
+  edited: PeriodField[];
+  error: string;
+}
+
+export function updatePeriod(previous: PeriodState, field: PeriodField, value: string): PeriodState {
+  const next = { ...previous, [field]: value, error: "" };
+  const fields: PeriodField[] = ["startDate", "days", "endDate"];
+  next.edited = [field, ...previous.edited.filter(key => key !== field)];
+  // Prefer the latest explicit input; fall back to an existing calculated value.
+  const other = [...next.edited, ...fields].find(key => key !== field && next[key] !== "");
+  if (!value || !other) return next;
+  const derived = fields.find(key => key !== field && key !== other)!;
+  try {
+    if (derived === "days") {
+      const start = parseLocalDate(next.startDate, "start date");
+      const end = parseLocalDate(next.endDate);
+      // Compare calendar labels on a neutral day counter, without DST offsets.
+      const dayNumber = (date: Date) => {
+        const counter = new Date(0);
+        counter.setUTCFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+        return counter.getTime() / 86400000;
+      };
+      const days = dayNumber(end) - dayNumber(start) + 1;
+      if (days < 1) throw new Error("End date must be on or after start date.");
+      next.days = String(days);
+    } else {
+      const days = Number(next.days);
+      if (!Number.isSafeInteger(days) || days < 1) throw new Error("Enter a positive whole number of downtime days.");
+      const anchor = derived === "startDate" ? parseLocalDate(next.endDate) : parseLocalDate(next.startDate, "start date");
+      anchor.setDate(anchor.getDate() + (derived === "startDate" ? -1 : 1) * (days - 1));
+      if (isNaN(anchor.getTime()) || anchor.getFullYear() < 1 || anchor.getFullYear() > 9999) {
+        throw new Error("The downtime period extends beyond the supported date range.");
+      }
+      next[derived] = getTodayDateString(anchor);
+    }
+  } catch (error) {
+    next[derived] = "";
+    next.error = error instanceof Error ? error.message : "Enter a valid downtime period.";
+  }
+  return next;
 }
 
 function calculateStartDate(endDate: string, days: number): string {
   const end = parseLocalDate(endDate);
-  if (isNaN(end.getTime()) || days <= 0) return "";
   const start = new Date(end);
+  // Subtract calendar days, not 24-hour intervals, across daylight-saving changes.
   start.setDate(end.getDate() - (days - 1));
+  if (isNaN(start.getTime()) || start.getFullYear() < 1) {
+    throw new Error("The downtime period extends beyond the supported date range.");
+  }
   return formatMMDD(start);
 }
 export function buildDiscordSummary(data: DiscordSummaryInput): string {
   const dc = T.find(r => r.level === data.taskLevel)?.dc ?? 0;
-  const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, data.counts, data.hasExperiencedProfessional,data.days));
+  const dailyCounts = countsForDays(data.counts, data.days, data.applyOneResultToAllDays);
+  const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, dailyCounts, data.hasExperiencedProfessional));
   const { counts } = data;
   const startDate = calculateStartDate(data.endDate, data.days);
   const endDate = formatMMDD(parseLocalDate(data.endDate));
@@ -197,6 +276,7 @@ export function buildDiscordSummary(data: DiscordSummaryInput): string {
     `> *${data.description}*`,
     `**Task Level Attempted:** ${capitalize(data.proficiency)} Level ${data.taskLevel}; **DC** ${dc}`,
     resultsLine,
+    data.applyOneResultToAllDays ? `*One result applied to all ${data.days} downtime days*` : undefined,
     `**Link:** ${data.rollsLink}`,
     `**Money Earned:** ${money}`,
     data.hasExperiencedProfessional ? `*Experienced Professional applied*` : undefined,

@@ -306,3 +306,25 @@ footer a:hover {
 .paizo-notice a:hover {
   color: #888;
 }
+.period-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.55fr) minmax(0, 1fr);
+  gap: 0.5rem;
+}
+.period-row label, .period-row input {
+  min-width: 0;
+}
+.clear-dates-button {
+  margin-left: auto;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+  color: #eee;
+  background: #181818;
+  border: 1px solid #555;
+  white-space: nowrap;
+}
+@media (max-width: 440px) {
+  .period-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

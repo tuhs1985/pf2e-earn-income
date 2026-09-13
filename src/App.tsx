@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import { buildDiscordSummary } from "./utils/earnIncome";
-import type { DiscordSummaryInput, DayResultCounts, Proficiency } from "./utils/earnIncome";
+import { useState, useEffect } from "react";
+import { buildDiscordSummary, getTodayDateString, updatePeriod } from "./utils/earnIncome";
+import type { PeriodField, PeriodState } from "./utils/earnIncome";
+import type { DiscordSummaryInput, Proficiency } from "./utils/earnIncome";
 import "./App.css";
+import PopoverHelp from "./PopoverHelp";
 
 // PWA detection (matches Crafting App logic)
 function useIsStandalone() {
@@ -36,11 +38,6 @@ function useIsStandalone() {
   return isStandalone;
 }
 
-function getTodayDateString(): string {
-  const today = new Date();
-  return today.toISOString().split("T")[0];
-}
-
 export function ReturnButton() {
   const [expanded, setExpanded] = useState(false);
 
@@ -69,8 +66,10 @@ export function ReturnButton() {
 export default function App() {
   // Main state, broken out for clarity (parity with Crafting App)
   const [character, setCharacter] = useState("");
-  const [endDate, setEndDate] = useState(getTodayDateString());
-  const [days, setDays] = useState<string>("");
+  const [period, setPeriod] = useState<PeriodState>(() => ({
+    startDate: "", days: "", endDate: getTodayDateString(), edited: ["endDate"], error: "",
+  }));
+  const { startDate, days, endDate } = period;
   const [skill, setSkill] = useState("");
   const [description, setDescription] = useState("");
   const [taskLevel, setTaskLevel] = useState<string>("");
@@ -81,11 +80,26 @@ export default function App() {
   const [criticalFailure, setCriticalFailure] = useState<string>("");
   const [rollsLink, setRollsLink] = useState("");
   const [hasExperiencedProfessional, setHasExperiencedProfessional] = useState(false);
+  const [applyOneResultToAllDays, setApplyOneResultToAllDays] = useState(false);
 
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [showInstructions, setShowInstructions] = useState(false);
+
+  const changePeriod = (field: PeriodField, value: string) => {
+    setPeriod(previous => updatePeriod(previous, field, value));
+    setOutput("");
+    setError("");
+    setCopied(false);
+  };
+
+  const clearPeriod = () => {
+    setPeriod({ startDate: "", days: "", endDate: "", edited: [], error: "" });
+    setOutput("");
+    setError("");
+    setCopied(false);
+  };
 
   // PWA standalone detection
   const isStandalone = useIsStandalone();
@@ -94,7 +108,7 @@ export default function App() {
   const buildInput = (): DiscordSummaryInput => ({
     character,
     endDate,
-    days: days === "" ? 1 : Number(days),
+    days: Number(days),
     skill,
     description,
     taskLevel: taskLevel === "" ? 0 : Number(taskLevel),
@@ -107,26 +121,18 @@ export default function App() {
     },
     rollsLink,
     hasExperiencedProfessional,
+    applyOneResultToAllDays,
   });
 
   // Generate summary
   const handleGenerate = () => {
     setError(""); // Clear previous errors
-    const safeInput = buildInput();
-    const totalResults =
-      safeInput.counts.criticalSuccess +
-      safeInput.counts.success +
-      safeInput.counts.failure +
-      safeInput.counts.criticalFailure;
-
-    if (totalResults > safeInput.days) {
-      setError(
-        `The sum of all results (${totalResults}) cannot exceed the number of downtime days (${safeInput.days}).`
-      );
+    if (period.error || !startDate || !days || !endDate) {
+      setError(period.error || "Enter any two of Start Date, Days, and End Date to complete the downtime period.");
       setOutput("");
       return;
     }
-
+    const safeInput = buildInput();
     try {
       const summary = buildDiscordSummary(safeInput);
       setOutput(summary);
@@ -164,15 +170,15 @@ export default function App() {
               <h2>How to Use</h2>
               <ol>
                 <li>
-                  <strong>Per-Day Entry:</strong> Enter the result for <b>each downtime day</b> you used. For example, if you have 7 days, you could record 3 successes, 2 failures, etc., with the total results matching the number of days.
+                  <strong>Per-Day Entry:</strong> Leave “Apply one result to all downtime days” unchecked. Enter the result for <b>each downtime day</b>. For 7 days, you could record 3 successes and 4 failures. The counts must add up to 7.
                 </li>
                 <li>
-                  <strong>Single-Period Entry:</strong> Enter <b>one result</b> for the entire downtime period. For example, if you only want to record the overall outcome, use a single result (e.g., 1 success for all 7 days).
+                  <strong>Single-Period Entry:</strong> Check “Apply one result to all downtime days.” Enter <b>1 in exactly one result field</b> and leave the others blank or 0. For example, 1 success applies the success payout to all 7 days.
                 </li>
               </ol>
               <p>
                 <em>
-                  The total results entered should not exceed the number of downtime days.
+                  Choose the entry mode before generating your summary.
                 </em>
               </p>
             </div>
@@ -197,15 +203,41 @@ export default function App() {
             />
           </label>
 
-          {/* Downtime Days and End Date, same line */}
-          <div className="form-row">
+          <div className="result-mode-row">
+            <span>Downtime Period</span>
+            <PopoverHelp label="Help with downtime dates">
+              Enter any two values to calculate the third. Start and end dates both count:
+              September 1 through September 7 is 7 days.
+              <br /><br />
+              When all three are filled, the two fields you edited most recently determine the third.
+              End Date starts at today; clear it to begin with Start Date and Days instead.
+              Use Clear Dates to empty all three fields and start over with any pair.
+              <br /><br /><em>Tap or click outside to close.</em>
+            </PopoverHelp>
+            <button type="button" className="clear-dates-button" onClick={clearPeriod}>
+              Clear Dates
+            </button>
+          </div>
+          <div className="form-row period-row">
             <label>
-              Downtime Days
+              Start Date
+              <input
+                type="date"
+                required
+                min="0001-01-01"
+                max="9999-12-31"
+                value={startDate}
+                onChange={e => changePeriod("startDate", e.target.value)}
+              />
+            </label>
+            <label>
+              Days
               <input
                 type="number"
                 min={1}
+                required
                 value={days}
-                onChange={e => setDays(e.target.value)}
+                onChange={e => changePeriod("days", e.target.value)}
                 placeholder="7"
               />
             </label>
@@ -213,8 +245,11 @@ export default function App() {
               End Date
               <input
                 type="date"
+                required
+                min="0001-01-01"
+                max="9999-12-31"
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
+                onChange={e => changePeriod("endDate", e.target.value)}
               />
             </label>
           </div>
@@ -276,6 +311,29 @@ export default function App() {
           </div>
 
           {/* Critical Successes and Successes, same line */}
+          <div className="result-mode-row">
+          <label>
+            <input
+              type="checkbox"
+              checked={applyOneResultToAllDays}
+              onChange={e => {
+                setApplyOneResultToAllDays(e.target.checked);
+                setOutput("");
+                setError("");
+                setCopied(false);
+              }}
+            />
+            Apply one result to all downtime days
+          </label>
+          <PopoverHelp>
+            <strong>Checked:</strong> Enter 1 in exactly one result field; leave the others blank or 0.
+            That result applies to every downtime day. For example, 1 success pays the success amount for all 7 days.
+            <br /><br />
+            <strong>Unchecked:</strong> Enter a result for each downtime day. The counts must add up to your downtime days.
+            <br /><br /><em>Tap or click outside to close.</em>
+          </PopoverHelp>
+          </div>
+          {period.error && <div role="alert">{period.error}</div>}
           <div className="form-row">
             <label>
               Critical Successes
@@ -349,7 +407,7 @@ export default function App() {
 
         {/* Error message display */}
         {error && (
-          <div className="error-message" style={{ color: "red", marginTop: "1em" }}>
+          <div className="error-message" role="alert" style={{ color: "red", marginTop: "1em" }}>
             {error}
           </div>
         )}
