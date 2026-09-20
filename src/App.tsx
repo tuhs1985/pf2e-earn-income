@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { buildDiscordSummary, getTodayDateString, updatePeriod } from "./utils/earnIncome";
+import { buildDiscordSummary, updatePeriod } from "./utils/earnIncome";
 import type { PeriodField, PeriodState } from "./utils/earnIncome";
 import type { DiscordSummaryInput, Proficiency } from "./utils/earnIncome";
 import "./App.css";
@@ -67,7 +67,7 @@ export default function App() {
   // Main state, broken out for clarity (parity with Crafting App)
   const [character, setCharacter] = useState("");
   const [period, setPeriod] = useState<PeriodState>(() => ({
-    startDate: "", days: "", endDate: getTodayDateString(), edited: ["endDate"], error: "",
+    startDate: "", days: "", endDate: "", edited: [], error: "",
   }));
   const { startDate, days, endDate } = period;
   const [skill, setSkill] = useState("");
@@ -210,7 +210,7 @@ export default function App() {
               September 1 through September 7 is 7 days.
               <br /><br />
               When all three are filled, the two fields you edited most recently determine the third.
-              End Date starts at today; clear it to begin with Start Date and Days instead.
+              All three fields start blank, so you can begin with any pair.
               Use Clear Dates to empty all three fields and start over with any pair.
               <br /><br /><em>Tap or click outside to close.</em>
             </PopoverHelp>
