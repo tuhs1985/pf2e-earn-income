@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { buildDiscordSummary, updatePeriod, checkCounts, newCheck } from "./utils/earnIncome";
 import type { PeriodField, PeriodState } from "./utils/earnIncome";
-import type { DiscordSummaryInput, Proficiency } from "./utils/earnIncome";
+import type { DiscordSummaryInput } from "./utils/earnIncome";
 import "./App.css";
 import PopoverHelp from "./PopoverHelp";
 import CheckList from "./CheckList";
+import CharacterSaves from "./CharacterSaves";
+import CharacterSkills from "./CharacterSkills";
+import type { SkillDraft } from "./utils/characterProfiles";
 import type { IncomeCheck } from "./utils/earnIncome";
 
 // PWA detection (matches Crafting App logic)
@@ -74,16 +77,19 @@ export default function App() {
     startDate: "", days: "", endDate: "", edited: [], error: "",
   }));
   const { startDate, days, endDate } = period;
-  const [skill, setSkill] = useState("");
+  const [skills, setSkills] = useState<SkillDraft[]>([{ name: "", modifier: "", proficiency: "trained", experienced: false }]);
+  const [selectedSkill, setSelectedSkill] = useState(0);
+  const activeSkill = skills[selectedSkill];
+  const skill = activeSkill.name;
+  const proficiency = activeSkill.proficiency;
+  const hasExperiencedProfessional = activeSkill.experienced;
   const [description, setDescription] = useState("");
   const [taskLevel, setTaskLevel] = useState<string>("");
-  const [proficiency, setProficiency] = useState<Proficiency>("trained");
   const [criticalSuccess, setCriticalSuccess] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [failure, setFailure] = useState<string>("");
   const [criticalFailure, setCriticalFailure] = useState<string>("");
   const [rollsLink, setRollsLink] = useState("");
-  const [hasExperiencedProfessional, setHasExperiencedProfessional] = useState(false);
   const [applyOneResultToAllDays, setApplyOneResultToAllDays] = useState(false);
 
   const [output, setOutput] = useState("");
@@ -139,7 +145,7 @@ export default function App() {
     try {
       const safeInput = buildInput();
       if (entryMode === "checks") {
-        safeInput.counts = checkCounts(checks, safeInput.taskLevel, safeInput.days);
+        safeInput.counts = checkCounts(checks.map(check => ({ ...check, modifier: check.modifier || activeSkill.modifier })), safeInput.taskLevel, safeInput.days);
         safeInput.applyOneResultToAllDays = false;
       }
       const summary = buildDiscordSummary(safeInput) + (entryMode === "checks" ? "\n*Results count days covered by checks.*" : "");
@@ -216,6 +222,16 @@ export default function App() {
             />
           </label>
 
+          <CharacterSaves name={character} skills={skills} selectedSkill={selectedSkill} onLoad={profile => {
+            setCharacter(profile.name);
+            setSkills(profile.skills.map(saved => ({ ...saved, modifier: String(saved.modifier) })));
+            setSelectedSkill(profile.selectedSkill);
+            setOutput(""); setError(""); setCopied(false);
+          }} />
+          <CharacterSkills skills={skills} selected={selectedSkill} onChange={(next, selected) => {
+            setSkills(next); setSelectedSkill(selected);
+            setOutput(""); setError(""); setCopied(false);
+          }} />
           </fieldset>
 
           <fieldset className="form-section">
@@ -274,18 +290,7 @@ export default function App() {
           </fieldset>
 
           <fieldset className="form-section">
-          <legend>Work &amp; Proficiency</legend>
-          {/* Skill Used */}
-          <label>
-            Skill Used
-            <input
-              type="text"
-              value={skill}
-              onChange={e => setSkill(e.target.value)}
-              placeholder="Barbarian Lore"
-            />
-          </label>
-
+          <legend>Work</legend>
           {/* Description */}
           <label>
             Description
@@ -317,29 +322,7 @@ export default function App() {
                 placeholder="0"
               />
             </label>
-            <label>
-              Proficiency
-              <select
-                value={proficiency}
-                onChange={e => setProficiency(e.target.value as Proficiency)}
-              >
-                <option value="trained">Trained</option>
-                <option value="expert">Expert</option>
-                <option value="master">Master</option>
-                <option value="legendary">Legendary</option>
-              </select>
-            </label>
           </div>
-
-          {/* Experienced Professional */}
-          <label className="vertical-label">
-            <input
-              type="checkbox"
-              checked={hasExperiencedProfessional}
-              onChange={e => setHasExperiencedProfessional(e.target.checked)}
-            />
-            Experienced Professional (Lore only)
-          </label>
 
           </fieldset>
 
@@ -350,7 +333,7 @@ export default function App() {
             <button type="button" aria-pressed={entryMode === "manual"} onClick={() => { setEntryMode("manual"); setOutput(""); setError(""); }}>Manual Counts</button>
           </div>
           {entryMode === "checks" ? <CheckList
-            checks={checks} days={Number(days)} level={Number(taskLevel)} proficiency={proficiency}
+            checks={checks} defaultModifier={activeSkill.modifier} days={Number(days)} level={Number(taskLevel)} proficiency={proficiency}
             experienced={hasExperiencedProfessional}
             onChange={value => { setChecks(value); setOutput(""); setError(""); setCopied(false); }}
           /> : <>

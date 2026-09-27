@@ -427,3 +427,19 @@ footer a:hover {
 .check-result, .check-hint { margin: .4rem 0 0; font-size: .85rem; overflow-wrap: anywhere; }
 .check-result { color: #b6d5c1; }
 .check-hint { color: #bbb; }
+
+.character-saves { min-width: 0; position: relative; margin-bottom: .6rem; }
+.character-save-buttons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.form-card .character-save-buttons button,
+.form-card .character-picker-actions button {
+  min-height: 44px; padding: 4px 2px; margin: 0; font-size: .8rem;
+  background: #333; color: #eee; border: 1px solid #777; border-radius: 5px;
+}
+.character-save-note { font-size: .85rem; overflow-wrap: anywhere; margin: .3rem 0; }
+.character-save-note:empty { display: none; }
+.character-picker { min-width: 0; padding: 4px 0; }
+.character-picker-actions { display: flex; gap: .5rem; }
+.character-picker-actions button { flex: 1; min-width: 0; }
+.character-picker-actions button:disabled { opacity: .45; }
+.character-saves button:focus-visible { outline: 2px solid #8dc8ff; outline-offset: 2px; }
+.character-skills { min-width: 0; }

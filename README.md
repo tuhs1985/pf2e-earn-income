@@ -16,7 +16,23 @@ A mobile-friendly Pathfinder Second Edition downtime calculator that turns work 
 
 ## Using the calculator
 
-### 1. Character and downtime period
+### 1. Character, skills, and saves
+
+Under Character, choose **Skill Used** for the current job. Edit its name, modifier, proficiency, and Experienced Professional setting. **Add Skill** and **Remove Skill** manage the character's skill list. One selected skill applies to all checks in a summary.
+
+**Save, Load, Delete, Export, Import** appear directly below the character name:
+
+- Save stores the character name, skill list, and selected skill in this browser. New names create new profiles; matching names (ignoring case and surrounding spaces) require confirmation before replacement.
+- Load restores character settings while keeping the current downtime and work entries.
+- Delete asks for confirmation and removes the stored profile, keeping the current form values.
+- Export downloads all saved Earn Income profiles as JSON.
+- Import validates the entire backup before saving anything and asks before replacing matching names. Extra fields are discarded. Crafting backups have a different schema and cannot be imported directly.
+
+Edits are not saved automatically: click Save after changing a skill. Backups are limited to 1 MB, 1,000 profiles, and 50 uniquely named skills per character.
+
+Saves use browser localStorage, so they are specific to this site, browser, and device. Export a backup before clearing browser data or moving devices. Local preview saves and live-site saves are separate.
+
+### Downtime period
 
 Enter the character name, then fill any two downtime fields:
 
@@ -32,7 +48,7 @@ Dates use calendar-day arithmetic, including across daylight-saving changes. **C
 
 ### 2. Work and proficiency
 
-Enter the skill and a description of the work. Select the task level (0–20) and proficiency (trained, expert, master, or legendary). A blank task level is treated as level 0.
+Select the skill and proficiency under Character, then enter a description of the work and the task level (0–20) under Work. A blank task level is treated as level 0.
 
 Select **Experienced Professional (Lore only)** when applicable. The calculator upgrades critical failures to failure payouts and doubles original failure payouts for expert or higher proficiency. Upgraded critical failures do not receive the doubled payout. The checkbox relies on you to confirm that the feat applies to the skill.
 
@@ -46,11 +62,13 @@ Each row represents one check and the days it covers.
 
 | Method | What to enter |
 | --- | --- |
-| d20 + modifier | Actual d20 face (1–20) and full skill modifier |
+| d20 + modifier | Actual d20 face (1–20); uses the selected character skill modifier unless overridden |
 | Known roll total | Final total and die status: Normal (2–19), Natural 1, or Natural 20 |
 | Assurance | Assurance total: 10 + proficiency bonus, excluding other modifiers |
 
 The task level supplies the DC. Meeting the DC succeeds; reaching DC + 10 critically succeeds; reaching DC − 10 or lower critically fails. Natural 20 improves the result by one degree and natural 1 worsens it by one degree. Neither is an automatic critical outcome. Assurance has no natural-die adjustment.
+
+Rolled checks inherit the selected character's skill modifier. **Modifier override** applies a temporary full modifier to that check; clear it to inherit again. Overrides remain when switching characters or skills, so review them before generating. Known roll totals and Assurance values are entered independently.
 
 The first row follows the whole downtime period until you edit its **Days covered** or add another check. **Add Check** preserves existing day allocations and creates a new row with blank days. Adjust the rows until the counter matches the downtime period. **Remove** deletes a row without reallocating its days.
 
@@ -77,7 +95,7 @@ Optionally include a Discord rolls link, then select **Generate Summary**. The a
 
 The summary includes the character, date range, skill, work description, task level, proficiency, DC, outcomes, rolls link, and total earnings. In Check List mode, outcome counts represent **days covered**, not the number of individual checks.
 
-Clipboard access depends on browser permissions and a secure context such as HTTPS or localhost. Form entries are held in memory and are not saved across a reload.
+Clipboard access depends on browser permissions and a secure context such as HTTPS or localhost. Only explicitly saved character profiles persist. Downtime dates, work descriptions, rolls, results, links, and temporary modifier overrides are not saved across a reload.
 
 ## Scope
 

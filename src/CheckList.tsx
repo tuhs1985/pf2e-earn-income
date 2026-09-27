@@ -3,9 +3,9 @@ import type { IncomeCheck, Proficiency } from "./utils/earnIncome";
 import PopoverHelp from "./PopoverHelp";
 
 
-export default function CheckList({ checks, onChange, days, level, proficiency, experienced }: {
+export default function CheckList({ checks, onChange, days, level, proficiency, experienced, defaultModifier }: {
   checks: IncomeCheck[]; onChange: (checks: IncomeCheck[]) => void; days: number;
-  level: number; proficiency: Proficiency; experienced: boolean;
+  level: number; proficiency: Proficiency; experienced: boolean; defaultModifier: string;
 }) {
   const update = (id: number, patch: Partial<IncomeCheck>) => onChange(checks.map(row => row.id === id ? { ...row, ...patch } : row));
   const assigned = checks.reduce((sum, row) => sum + (row.days === null ? days : Number(row.days) || 0), 0);
@@ -19,13 +19,14 @@ export default function CheckList({ checks, onChange, days, level, proficiency, 
         Adding a check preserves existing allocations. Adjust days so the total matches your downtime period.
         <br /><br />Enter the actual d20 face to detect natural 1 and 20 automatically. For a known total, select the die status yourself.
         Assurance uses 10 + proficiency bonus, with no other modifiers or natural-die adjustment.
+        Rolled checks use the selected character skill modifier unless a Modifier override is entered. Clear an override to use the character modifier again.
       </PopoverHelp>
     </div>
     {checks.map((row, index) => {
       let feedback = "Enter the check to see its result.";
       let valid = false;
       try {
-        const resolved = resolveCheck(row, level);
+        const resolved = resolveCheck({ ...row, modifier: row.modifier || defaultModifier }, level);
         const covered = row.days === null ? days : Number(row.days);
         const daily = totalEarnings(level, proficiency, { criticalSuccess: 0, success: 0, failure: 0, criticalFailure: 0, [resolved.result]: 1 }, experienced);
         feedback = `${resolved.total} vs DC ${dc} · ${resultLabels[resolved.result]}`;
@@ -44,7 +45,7 @@ export default function CheckList({ checks, onChange, days, level, proficiency, 
         </div>
         {row.method === "rolled" ? <div className="form-row">
           <label>d20 face<input type="number" required min={1} max={20} value={row.die} placeholder="1–20" onChange={e => update(row.id, { die: e.target.value })} /></label>
-          <label>Skill modifier<input type="number" required value={row.modifier} placeholder="e.g. 12" onChange={e => update(row.id, { modifier: e.target.value })} /></label>
+          <label>Modifier override<input type="number" value={row.modifier} placeholder={defaultModifier || "Set skill modifier"} onChange={e => update(row.id, { modifier: e.target.value })} /></label>
         </div> : <div className={row.method === "total" ? "check-pair" : undefined}>
           <label>{row.method === "assurance" ? "Assurance total" : "Roll total"}<input type="number" required value={row.total} placeholder={row.method === "assurance" ? "10 + proficiency bonus" : "Total including modifiers"} onChange={e => update(row.id, { total: e.target.value })} /></label>
           {row.method === "total" && <label>Die status<select value={row.natural} onChange={e => update(row.id, { natural: e.target.value as IncomeCheck["natural"] })}>
