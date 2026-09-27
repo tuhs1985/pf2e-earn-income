@@ -2,7 +2,8 @@ body {
   background: #222;
   color: #eee;
   font-family: sans-serif;
-  margin: 1;
+  margin: 0;
+  box-sizing: border-box;
   padding: 0 .5rem 0 .5rem;
 }
 
@@ -95,7 +96,8 @@ form.form-card {
   box-shadow: 0 1px 8px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
-  gap: .18rem;
+  gap: .6rem;
+  min-width: 0;
 }
 
 .form-card label {
@@ -326,5 +328,52 @@ footer a:hover {
 @media (max-width: 440px) {
   .period-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+#root {
+  width: 100%;
+  min-width: 0;
+}
+
+.form-section {
+  border: 1px solid #555;
+  border-radius: .85rem;
+  padding: .6rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.form-section legend {
+  padding: 0 .3rem;
+  font-size: .9rem;
+  color: #ccc;
+}
+
+.form-section .form-row > label {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.form-section label,
+.form-section input,
+.form-section select,
+.form-section textarea,
+.form-section .result-mode-row {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.form-section .result-mode-row > label {
+  flex: 1;
+}
+
+@media (max-width: 440px) {
+  form.form-card {
+    padding: .6rem;
+  }
+  .form-section .form-row {
+    gap: .5rem;
   }
 }

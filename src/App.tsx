@@ -192,6 +192,8 @@ export default function App() {
           }}
           autoComplete="off"
         >
+          <fieldset className="form-section">
+          <legend>Character</legend>
           {/* Character Name */}
           <label>
             Character Name
@@ -203,8 +205,11 @@ export default function App() {
             />
           </label>
 
+          </fieldset>
+
+          <fieldset className="form-section">
+          <legend>Downtime Period</legend>
           <div className="result-mode-row">
-            <span>Downtime Period</span>
             <PopoverHelp label="Help with downtime dates">
               Enter any two values to calculate the third. Start and end dates both count:
               September 1 through September 7 is 7 days.
@@ -254,6 +259,11 @@ export default function App() {
             </label>
           </div>
 
+          {period.error && <div role="alert">{period.error}</div>}
+          </fieldset>
+
+          <fieldset className="form-section">
+          <legend>Work &amp; Proficiency</legend>
           {/* Skill Used */}
           <label>
             Skill Used
@@ -310,6 +320,20 @@ export default function App() {
             </label>
           </div>
 
+          {/* Experienced Professional */}
+          <label className="vertical-label">
+            <input
+              type="checkbox"
+              checked={hasExperiencedProfessional}
+              onChange={e => setHasExperiencedProfessional(e.target.checked)}
+            />
+            Experienced Professional (Lore only)
+          </label>
+
+          </fieldset>
+
+          <fieldset className="form-section">
+          <legend>Results &amp; Rolls</legend>
           {/* Critical Successes and Successes, same line */}
           <div className="result-mode-row">
           <label>
@@ -333,7 +357,6 @@ export default function App() {
             <br /><br /><em>Tap or click outside to close.</em>
           </PopoverHelp>
           </div>
-          {period.error && <div role="alert">{period.error}</div>}
           <div className="form-row">
             <label>
               Critical Successes
@@ -392,15 +415,7 @@ export default function App() {
             />
           </label>
 
-          {/* Experienced Professional */}
-          <label className="vertical-label">
-            <input
-              type="checkbox"
-              checked={hasExperiencedProfessional}
-              onChange={e => setHasExperiencedProfessional(e.target.checked)}
-            />
-            Experienced Professional (Lore only)
-          </label>
+          </fieldset>
 
           <button type="submit">Generate Summary</button>
         </form>
