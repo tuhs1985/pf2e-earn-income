@@ -265,9 +265,9 @@ export function buildDiscordSummary(data: DiscordSummaryInput): string {
   if (remainingCritFailures > 0) {
     resultsArray.push(`${remainingCritFailures} × Critical Failures`);
   }
-  const resultsLine = resultsArray.length > 0
-    ? `**Results:** ${resultsArray.join(", ")}`
-    : `**Results:** None`;
+  const resultsText = resultsArray.length > 0 ? resultsArray.join(", ") : "None";
+  const rollsLink = data.rollsLink.trim().replace(/[\s<>]/g, char => encodeURIComponent(char));
+  const resultsLine = `**Results:** ${rollsLink ? `[${resultsText}](<${rollsLink}>)` : resultsText}`;
 
   return [
     `**Character:** ${data.character}`,
@@ -277,7 +277,6 @@ export function buildDiscordSummary(data: DiscordSummaryInput): string {
     `**Task Level Attempted:** ${capitalize(data.proficiency)} Level ${data.taskLevel}; **DC** ${dc}`,
     resultsLine,
     data.applyOneResultToAllDays ? `*One result applied to all ${data.days} downtime days*` : undefined,
-    `**Link:** ${data.rollsLink}`,
     `**Money Earned:** ${money}`,
     data.hasExperiencedProfessional ? `*Experienced Professional applied*` : undefined,
   ].filter(Boolean).join("\n");

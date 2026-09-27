@@ -18,6 +18,16 @@ const input = (counts, overrides = {}) => ({
   counts: { ...empty, ...counts }, ...overrides,
 });
 
+test('results link to rolls without a separate link line', () => {
+  const url = 'https://discord.com/channels/123/456/789';
+  const summary = buildDiscordSummary(input({ success: 3, failure: 4 }, { rollsLink: ` ${url} ` }));
+  assert.ok(summary.includes(`**Results:** [3 × Successes, 4 × Failures](<${url}>)`));
+  assert.ok(!summary.includes('**Link:**'));
+  const plain = buildDiscordSummary(input({ success: 7 }, { rollsLink: '  ' }));
+  assert.ok(plain.includes('**Results:** 7 × Successes\n'));
+  assert.ok(!plain.includes('**Link:**'));
+});
+
 test('daily counts are never silently expanded', () => {
   assert.equal(totalEarnings(1, 'trained', { ...empty, success: 3 }), 60);
   assert.match(buildDiscordSummary(input({ success: 7 })), /Money Earned:\*\* 1 gp, 4 sp/);
