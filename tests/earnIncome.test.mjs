@@ -8,7 +8,7 @@ const source = readFileSync(new URL('../src/utils/earnIncome.ts', import.meta.ur
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
 });
-const { totalEarnings, buildDiscordSummary, getTodayDateString, updatePeriod } = await import(
+const { totalEarnings, buildDiscordSummary, getTodayDateString, updatePeriod, resolveCheck, checkCounts, newCheck } = await import(
   `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
 );
 const empty = { criticalSuccess: 0, success: 0, failure: 0, criticalFailure: 0 };
@@ -184,4 +184,27 @@ test('invalid periods clear the calculated field and recover when corrected', ()
   }
   assert.match(updatePeriod(updatePeriod(blankPeriod(), 'startDate', '9999-12-31'), 'days', '2').error, /supported date range/);
   assert.match(updatePeriod(updatePeriod(blankPeriod(), 'endDate', '0001-01-01'), 'days', '2').error, /supported date range/);
+});
+
+test('check degrees respect exact DC boundaries and natural die steps', () => {
+  for (const [total, expected] of [[4, 'criticalFailure'], [5, 'failure'], [13, 'failure'], [14, 'success'], [23, 'success'], [24, 'criticalSuccess']]) {
+    assert.equal(resolveCheck({ ...newCheck(1), method: 'total', total: String(total) }, 0).result, expected);
+  }
+  assert.equal(resolveCheck({ ...newCheck(1), die: '20', modifier: '-20' }, 0).result, 'failure');
+  assert.equal(resolveCheck({ ...newCheck(1), die: '1', modifier: '30' }, 0).result, 'success');
+  assert.equal(resolveCheck({ ...newCheck(1), method: 'total', total: '14', natural: '20' }, 0).result, 'criticalSuccess');
+  assert.equal(resolveCheck({ ...newCheck(1), method: 'assurance', total: '14', natural: '20' }, 0).result, 'success');
+  for (const die of ['', '0', '21', '1.5']) assert.throws(() => resolveCheck({ ...newCheck(1), die, modifier: '10' }, 0));
+});
+
+test('check list aggregates days and rejects incomplete or mismatched allocations', () => {
+  const first = { ...newCheck(1), die: '10', modifier: '5' };
+  assert.equal(checkCounts([first], 1, 7).success, 7);
+  const second = { ...newCheck(2), method: 'assurance', total: '14', days: '4' };
+  const counts = checkCounts([{ ...first, days: '3' }, second], 1, 7);
+  assert.deepEqual(counts, { criticalSuccess: 0, success: 3, failure: 4, criticalFailure: 0 });
+  assert.equal(totalEarnings(1, 'trained', counts), 68);
+  assert.throws(() => checkCounts([{ ...first, days: '2' }, second], 1, 7), /must equal/);
+  assert.throws(() => checkCounts([{ ...first, days: '' }], 1, 7), /positive whole/);
+  assert.throws(() => checkCounts([newCheck(1)], 1, 7), /Check 1/);
 });

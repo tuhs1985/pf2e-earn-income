@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { buildDiscordSummary, updatePeriod } from "./utils/earnIncome";
+import { buildDiscordSummary, updatePeriod, checkCounts, newCheck } from "./utils/earnIncome";
 import type { PeriodField, PeriodState } from "./utils/earnIncome";
 import type { DiscordSummaryInput, Proficiency } from "./utils/earnIncome";
 import "./App.css";
 import PopoverHelp from "./PopoverHelp";
+import CheckList from "./CheckList";
+import type { IncomeCheck } from "./utils/earnIncome";
 
 // PWA detection (matches Crafting App logic)
 function useIsStandalone() {
@@ -65,6 +67,8 @@ export function ReturnButton() {
 
 export default function App() {
   // Main state, broken out for clarity (parity with Crafting App)
+  const [entryMode, setEntryMode] = useState<"checks" | "manual">("checks");
+  const [checks, setChecks] = useState<IncomeCheck[]>([newCheck(1)]);
   const [character, setCharacter] = useState("");
   const [period, setPeriod] = useState<PeriodState>(() => ({
     startDate: "", days: "", endDate: "", edited: [], error: "",
@@ -132,9 +136,13 @@ export default function App() {
       setOutput("");
       return;
     }
-    const safeInput = buildInput();
     try {
-      const summary = buildDiscordSummary(safeInput);
+      const safeInput = buildInput();
+      if (entryMode === "checks") {
+        safeInput.counts = checkCounts(checks, safeInput.taskLevel, safeInput.days);
+        safeInput.applyOneResultToAllDays = false;
+      }
+      const summary = buildDiscordSummary(safeInput) + (entryMode === "checks" ? "\n*Results count days covered by checks.*" : "");
       setOutput(summary);
       navigator.clipboard.writeText(summary).then(() => {
         setCopied(true);
@@ -168,6 +176,9 @@ export default function App() {
           {showInstructions && (
             <div className="instructions-content" id="instructions-content" style={{marginTop: "1em"}}>
               <h2>How to Use</h2>
+              <p><strong>Check List:</strong> Enter d20 + modifier, a known roll total, or Assurance for each check.
+                Assign the number of days each check covers. Use Add Check for multiple checks.</p>
+              <p><strong>Manual Counts:</strong> Use your existing result totals with either option below.</p>
               <ol>
                 <li>
                   <strong>Per-Day Entry:</strong> Leave “Apply one result to all downtime days” unchecked. Enter the result for <b>each downtime day</b>. For 7 days, you could record 3 successes and 4 failures. The counts must add up to 7.
@@ -334,6 +345,15 @@ export default function App() {
 
           <fieldset className="form-section">
           <legend>Results &amp; Rolls</legend>
+          <div className="entry-mode" role="group" aria-label="Result entry mode">
+            <button type="button" aria-pressed={entryMode === "checks"} onClick={() => { setEntryMode("checks"); setOutput(""); setError(""); }}>Check List</button>
+            <button type="button" aria-pressed={entryMode === "manual"} onClick={() => { setEntryMode("manual"); setOutput(""); setError(""); }}>Manual Counts</button>
+          </div>
+          {entryMode === "checks" ? <CheckList
+            checks={checks} days={Number(days)} level={Number(taskLevel)} proficiency={proficiency}
+            experienced={hasExperiencedProfessional}
+            onChange={value => { setChecks(value); setOutput(""); setError(""); setCopied(false); }}
+          /> : <>
           {/* Critical Successes and Successes, same line */}
           <div className="result-mode-row">
           <label>
@@ -403,6 +423,8 @@ export default function App() {
               />
             </label>
           </div>
+
+          </>}
 
           {/* Discord Rolls Link */}
           <label>

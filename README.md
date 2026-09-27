@@ -1,60 +1,145 @@
-# React + TypeScript + Vite
+# PF2e Earn Income Generator — v2.0
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A mobile-friendly Pathfinder Second Edition downtime calculator that turns work dates and check results into a Discord-ready earnings summary.
 
-Currently, two official plugins are available:
+[Open the website](https://earnincome.tuhsrpg.com/) · [Report an issue](https://github.com/tuhs1985/pf2e-earn-income/issues)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## What's new in v2.0
 
-## Expanding the ESLint configuration
+- Linked **Start Date, Days, and End Date**: enter any two to calculate the third.
+- **Check List** with d20 + modifier, known roll total, and Assurance methods.
+- Multiple checks, each covering a chosen number of downtime days.
+- Automatic degrees of success, including natural 1 and natural 20 adjustments.
+- Live per-check results, daily earnings, and earnings for assigned days.
+- **Manual Counts** retained for directly entering outcomes.
+- Logical form sections, information popovers, and responsive phone layouts.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Using the calculator
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### 1. Character and downtime period
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Enter the character name, then fill any two downtime fields:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Inputs | Calculated field |
+| --- | --- |
+| Start Date + End Date | Days |
+| Start Date + Days | End Date |
+| Days + End Date | Start Date |
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+Both dates count: September 1 through September 7 is **7 days**. All three fields start blank. Once all are filled, the two fields you edited most recently determine the third.
+
+Dates use calendar-day arithmetic, including across daylight-saving changes. **Clear Dates** empties the period and resets its edit history without clearing other form fields.
+
+### 2. Work and proficiency
+
+Enter the skill and a description of the work. Select the task level (0–20) and proficiency (trained, expert, master, or legendary). A blank task level is treated as level 0.
+
+Select **Experienced Professional (Lore only)** when applicable. The calculator upgrades critical failures to failure payouts and doubles original failure payouts for expert or higher proficiency. Upgraded critical failures do not receive the doubled payout. The checkbox relies on you to confirm that the feat applies to the skill.
+
+### 3. Results and rolls
+
+Choose **Check List** or **Manual Counts**. Only the selected mode contributes to the summary.
+
+#### Check List
+
+Each row represents one check and the days it covers.
+
+| Method | What to enter |
+| --- | --- |
+| d20 + modifier | Actual d20 face (1–20) and full skill modifier |
+| Known roll total | Final total and die status: Normal (2–19), Natural 1, or Natural 20 |
+| Assurance | Assurance total: 10 + proficiency bonus, excluding other modifiers |
+
+The task level supplies the DC. Meeting the DC succeeds; reaching DC + 10 critically succeeds; reaching DC − 10 or lower critically fails. Natural 20 improves the result by one degree and natural 1 worsens it by one degree. Neither is an automatic critical outcome. Assurance has no natural-die adjustment.
+
+The first row follows the whole downtime period until you edit its **Days covered** or add another check. **Add Check** preserves existing day allocations and creates a new row with blank days. Adjust the rows until the counter matches the downtime period. **Remove** deletes a row without reallocating its days.
+
+Completed checks show their total against the DC, degree of success, daily payout, and payout for their assigned days. Experienced Professional affects those payouts when selected.
+
+For example, at task level 1 and trained proficiency:
+
+- Three days of critical success pay 9 sp.
+- Four days of success pay 8 sp.
+- Together, the seven-day period pays 1 gp, 7 sp.
+
+The current preview is per entered check. It does not provide a pre-roll table of all possible outcomes or a probability-weighted expected value.
+
+#### Manual Counts
+
+Enter counts of critical successes, successes, failures, and critical failures.
+
+- Normally, counts represent days and must add up to the downtime period.
+- With **Apply one result to all downtime days** checked, enter 1 in exactly one outcome field. Leave the others blank or zero. That outcome supplies the payout for every day.
+
+### 4. Generate the summary
+
+Optionally include a Discord rolls link, then select **Generate Summary**. The app displays a Markdown summary and attempts to copy it to the clipboard.
+
+The summary includes the character, date range, skill, work description, task level, proficiency, DC, outcomes, rolls link, and total earnings. In Check List mode, outcome counts represent **days covered**, not the number of individual checks.
+
+Clipboard access depends on browser permissions and a secure context such as HTTPS or localhost. Form entries are held in memory and are not saved across a reload.
+
+## Scope
+
+All check rows use the same task level, proficiency, skill, and feat setting. Use separate summaries for different jobs or proficiency settings. The tool calculates payouts; the GM determines job availability, permitted duration, and any custom DC or other special rules. There is currently no custom DC override.
+
+The site runs entirely in the browser. It includes a PWA manifest and service worker for installation and cached offline use after an initial load in a supported browser.
+
+## Local development
+
+Use Node.js 22 or newer with npm.
+
+    npm ci
+    npm run dev
+
+Open the local address printed by Vite.
+
+### Checks
+
+    npm run lint
+    npm test
+    npx tsc -p tsconfig.app.json --noEmit --incremental false
+    npx tsc -p tsconfig.node.json --noEmit --incremental false
+
+Tests cover payout modes, day allocations, natural-die adjustments, Assurance, invalid input, and date calculations across time zones, daylight-saving transitions, leap days, and year boundaries.
+
+### Build and preview
+
+    npm run build
+    npm run preview
+
+The production build is written to the dist directory. Preview serves that build; rebuild after source changes. The build script does not run lint, tests, or TypeScript checks automatically.
+
+## Deployment
+
+The website uses GitHub Pages with the custom domain in public/CNAME.
+
+After running the checks and committing the intended source changes:
+
+    git push origin main
+    npm run deploy
+
+The deploy command automatically runs the production build through predeploy, then publishes dist to the gh-pages branch using the configured Git remote. GitHub Pages may take a short time to serve the new build. Publishing the site and pushing source are separate operations.
+
+Keep public/CNAME, the PWA icons, and the manifest configuration when changing deployment assets. The dist directory is generated output and is ignored by Git. The repository is also an active distribution workspace, so generated files and installed dependencies can be present locally.
+
+## Project map
+
+| Location | Purpose |
+| --- | --- |
+| src/App.tsx | Main form, date state, entry-mode selection, and summary generation |
+| src/CheckList.tsx | Check rows, day allocations, and live result previews |
+| src/utils/earnIncome.ts | Income table, check resolution, earnings, dates, and summary formatting |
+| src/PopoverHelp.tsx | Information popovers |
+| src/App.css, src/PopoverHelp.css | Form layout and component styling |
+| tests/earnIncome.test.mjs | Calculation and date regression tests |
+| public/ | Custom domain and static PWA assets |
+| vite.config.ts | Vite build and PWA configuration |
+
 ## License
-- MIT License - feel free to use, fork, modify, and distribute this project however you want.
-- See LICENSE file for full details.
+
+MIT License. See [LICENSE](LICENSE) for the software license.
 
 ## Legal / Attribution
+
 This project uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy (paizo.com/licenses/communityuse). We are expressly prohibited from charging you to use or access this content. This project is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit paizo.com.

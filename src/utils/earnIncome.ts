@@ -145,7 +145,7 @@ export function totalEarnings(
 
   return earnings;
 }
-function copperToString(cpValue: number): string {
+export function copperToString(cpValue: number): string {
   const gpPart = Math.floor(cpValue / 100);
   const spPart = Math.floor((cpValue % 100) / 10);
   const cpPart = cpValue % 10;
@@ -153,7 +153,7 @@ function copperToString(cpValue: number): string {
   if (gpPart) parts.push(`${gpPart} gp`);
   if (spPart) parts.push(`${spPart} sp`);
   if (cpPart) parts.push(`${cpPart} cp`);
-  return parts.join(", ");
+  return parts.join(", ") || "0 cp";
 }
 
 export function getTodayDateString(today = new Date()): string {
@@ -283,3 +283,64 @@ export function buildDiscordSummary(data: DiscordSummaryInput): string {
   ].filter(Boolean).join("\n");
 }
 function capitalize(s: string): string { return s.slice(0,1).toUpperCase() + s.slice(1); }
+
+export interface IncomeCheck {
+  id: number;
+  method: "rolled" | "total" | "assurance";
+  die: string;
+  modifier: string;
+  total: string;
+  natural: "normal" | "1" | "20";
+  days: string | null;
+}
+
+export const resultLabels: Record<Result, string> = {
+  criticalSuccess: "Critical success", success: "Success",
+  failure: "Failure", criticalFailure: "Critical failure",
+};
+
+export function taskDC(level: number): number {
+  const row = T.find(row => row.level === level);
+  if (!row) throw new Error("Enter a whole task level from 0 to 20.");
+  return row.dc;
+}
+
+export function resolveCheck(check: IncomeCheck, level: number): { total: number; result: Result } {
+  const integer = (value: string, name: string) => {
+    if (!value.trim() || !Number.isSafeInteger(Number(value))) throw new Error(`Enter a whole number for ${name}.`);
+    return Number(value);
+  };
+  let total: number;
+  let natural = 0;
+  if (check.method === "rolled") {
+    const die = integer(check.die, "d20 face");
+    if (die < 1 || die > 20) throw new Error("The d20 face must be from 1 to 20.");
+    total = die + integer(check.modifier, "skill modifier");
+    natural = die;
+  } else {
+    total = integer(check.total, check.method === "assurance" ? "Assurance total" : "roll total");
+    natural = check.method === "total" ? Number(check.natural) : 0;
+  }
+  const difference = total - taskDC(level);
+  let degree = difference >= 10 ? 3 : difference >= 0 ? 2 : difference <= -10 ? 0 : 1;
+  if (natural === 20) degree = Math.min(3, degree + 1);
+  if (natural === 1) degree = Math.max(0, degree - 1);
+  return { total, result: (["criticalFailure", "failure", "success", "criticalSuccess"] as Result[])[degree] };
+}
+
+export function checkCounts(checks: IncomeCheck[], level: number, days: number): DayResultCounts {
+  const counts: DayResultCounts = { criticalSuccess: 0, success: 0, failure: 0, criticalFailure: 0 };
+  if (!checks.length) throw new Error("Add at least one check.");
+  checks.forEach((check, index) => {
+    const covered = check.days === null ? days : Number(check.days);
+    if (!Number.isSafeInteger(covered) || covered < 1) throw new Error(`Check ${index + 1}: enter positive whole days covered.`);
+    try {
+      counts[resolveCheck(check, level).result] += covered;
+    } catch (error) {
+      throw new Error(`Check ${index + 1}: ${error instanceof Error ? error.message : "Invalid check."}`);
+    }
+  });
+  return countsForDays(counts, days);
+}
+
+export const newCheck = (id: number): IncomeCheck => ({ id, method: "rolled", die: "", modifier: "", total: "", natural: "normal", days: null });
