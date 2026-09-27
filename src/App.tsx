@@ -235,7 +235,7 @@ export default function App() {
           </fieldset>
 
           <fieldset className="form-section">
-          <legend>Downtime Period</legend>
+          <legend>Downtime</legend>
           <div className="result-mode-row">
             <PopoverHelp label="Help with downtime dates">
               Enter any two values to calculate the third. Start and end dates both count:
@@ -287,10 +287,7 @@ export default function App() {
           </div>
 
           {period.error && <div role="alert">{period.error}</div>}
-          </fieldset>
 
-          <fieldset className="form-section">
-          <legend>Work</legend>
           {/* Description */}
           <label>
             Description
