@@ -148,7 +148,7 @@ export default function App() {
         safeInput.counts = checkCounts(checks.map(check => ({ ...check, modifier: check.modifier || activeSkill.modifier })), safeInput.taskLevel, safeInput.days);
         safeInput.applyOneResultToAllDays = false;
       }
-      const summary = buildDiscordSummary(safeInput) + (entryMode === "checks" ? "\n*Results count days covered by checks.*" : "");
+      const summary = buildDiscordSummary(safeInput);
       setOutput(summary);
       navigator.clipboard.writeText(summary).then(() => {
         setCopied(true);
