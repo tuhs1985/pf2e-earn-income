@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import ts from 'typescript';
-const source = readFileSync(new URL('../src/utils/characterProfiles.ts', import.meta.url), 'utf8');
-const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } });
-const { validateProfile, parseProfiles, serializeProfiles, mergeProfiles, profileFromDraft } = await import('data:text/javascript;base64,' + Buffer.from(outputText).toString('base64'));
+import { loadUtility } from './loadUtility.mjs';
+const { validateProfile, parseProfiles, serializeProfiles, mergeProfiles, profileFromDraft } = loadUtility('characterProfiles');
 const a = { name: 'Alice', selectedSkill: 0, skills: [{ name: 'Sailing Lore', modifier: 12, proficiency: 'expert', experienced: true }] };
 test('profile round trip strips unrelated and executable-looking fields', () => {
   const clean = parseProfiles(serializeProfiles([{ ...a, days: 7, html: '<script>x</script>', skills: [{ ...a.skills[0], script: 'x' }] }]));

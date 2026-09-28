@@ -141,6 +141,14 @@ The deploy command automatically runs the production build through predeploy, th
 
 Keep public/CNAME, the PWA icons, and the manifest configuration when changing deployment assets. The dist directory is generated output and is ignored by Git. The repository is also an active distribution workspace, so generated files and installed dependencies can be present locally.
 
+## Spreadsheet output
+
+After generating a result, select **Sheet row**. Copy one tab-separated data row, or include headers. The mobile preview lists each column beside its value.
+
+Default columns are Activity, Date, Character, Description, Status, Task Level, DC Mod, DC, Assured?, and Roll Result. Date uses the downtime end date; DC comes from task level plus the selected PF2e difficulty and additive Manual DC Adj. These adjustments apply to rolled checks and Assurance; payout rates still use task level. DC Mod shows the difficulty name, or the combined numeric adjustment when Manual DC Adj. is entered. Optional DC Adjustment always gives the combined number. Other optional columns include total Income (numeric gp), the Discord roll link, Skill, Proficiency, Days, and Start date. Roll Result is populated for a single check; multiple checks and manual counts have no single roll total.
+
+**Edit columns** to show/hide, rename, reorder, add blank cells, or negate numeric values. Save a character to store up to ten named templates, including Default. **New** begins with the current arrangement; the same **Save** button saves the new name. Character backups include templates and the active selection. Older saves remain compatible. Layout export/import transfers one layout; imported edits stay in the working preview until saved. Text is protected from spreadsheet formula interpretation.
+
 ## Project map
 
 | Location | Purpose |

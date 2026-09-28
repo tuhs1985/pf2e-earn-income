@@ -443,3 +443,12 @@ footer a:hover {
 .character-picker-actions button:disabled { opacity: .45; }
 .character-saves button:focus-visible { outline: 2px solid #8dc8ff; outline-offset: 2px; }
 .character-skills { min-width: 0; }
+
+.task-dc-row { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: .6rem; }
+.task-dc-row > label { min-width: 0; }
+.task-dc-row input, .task-dc-row select { min-width: 0; width: 100%; box-sizing: border-box; }
+@media (max-width: 380px) {
+  .task-dc-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+  .task-dc-row > label:last-child { grid-column: 1 / -1; }
+}
+.task-dc-row { align-items: end; }

@@ -81,6 +81,8 @@ export interface DiscordSummaryInput {
   skill: string;
   description: string;
   taskLevel: number;
+  dcAdjustment?: number;
+  dcAdjustmentLabel?: string | number;
   proficiency: Proficiency;
   counts: DayResultCounts;
   rollsLink: string;
@@ -88,7 +90,7 @@ export interface DiscordSummaryInput {
   applyOneResultToAllDays?: boolean;
 }
 
-function countsForDays(
+export function countsForDays(
   counts: DayResultCounts,
   days: number,
   applyOneResultToAllDays = false
@@ -241,7 +243,7 @@ function calculateStartDate(endDate: string, days: number): string {
   return formatMMDD(start);
 }
 export function buildDiscordSummary(data: DiscordSummaryInput): string {
-  const dc = T.find(r => r.level === data.taskLevel)?.dc ?? 0;
+  const dc = taskDC(data.taskLevel, data.dcAdjustment);
   const dailyCounts = countsForDays(data.counts, data.days, data.applyOneResultToAllDays);
   const money = copperToString(totalEarnings(data.taskLevel, data.proficiency, dailyCounts, data.hasExperiencedProfessional));
   const { counts } = data;
@@ -298,13 +300,16 @@ export const resultLabels: Record<Result, string> = {
   failure: "Failure", criticalFailure: "Critical failure",
 };
 
-export function taskDC(level: number): number {
+export function taskDC(level: number, adjustment = 0): number {
+  if (!Number.isSafeInteger(adjustment)) throw new Error("Enter a whole number for the DC adjustment.");
   const row = T.find(row => row.level === level);
   if (!row) throw new Error("Enter a whole task level from 0 to 20.");
-  return row.dc;
+  const dc = row.dc + adjustment;
+  if (!Number.isSafeInteger(dc)) throw new Error("DC adjustment is too large.");
+  return dc;
 }
 
-export function resolveCheck(check: IncomeCheck, level: number): { total: number; result: Result } {
+export function resolveCheck(check: IncomeCheck, level: number, dcAdjustment = 0): { total: number; result: Result } {
   const integer = (value: string, name: string) => {
     if (!value.trim() || !Number.isSafeInteger(Number(value))) throw new Error(`Enter a whole number for ${name}.`);
     return Number(value);
@@ -320,21 +325,21 @@ export function resolveCheck(check: IncomeCheck, level: number): { total: number
     total = integer(check.total, check.method === "assurance" ? "Assurance total" : "roll total");
     natural = check.method === "total" ? Number(check.natural) : 0;
   }
-  const difference = total - taskDC(level);
+  const difference = total - taskDC(level, dcAdjustment);
   let degree = difference >= 10 ? 3 : difference >= 0 ? 2 : difference <= -10 ? 0 : 1;
   if (natural === 20) degree = Math.min(3, degree + 1);
   if (natural === 1) degree = Math.max(0, degree - 1);
   return { total, result: (["criticalFailure", "failure", "success", "criticalSuccess"] as Result[])[degree] };
 }
 
-export function checkCounts(checks: IncomeCheck[], level: number, days: number): DayResultCounts {
+export function checkCounts(checks: IncomeCheck[], level: number, days: number, dcAdjustment = 0): DayResultCounts {
   const counts: DayResultCounts = { criticalSuccess: 0, success: 0, failure: 0, criticalFailure: 0 };
   if (!checks.length) throw new Error("Add at least one check.");
   checks.forEach((check, index) => {
     const covered = check.days === null ? days : Number(check.days);
     if (!Number.isSafeInteger(covered) || covered < 1) throw new Error(`Check ${index + 1}: enter positive whole days covered.`);
     try {
-      counts[resolveCheck(check, level).result] += covered;
+      counts[resolveCheck(check, level, dcAdjustment).result] += covered;
     } catch (error) {
       throw new Error(`Check ${index + 1}: ${error instanceof Error ? error.message : "Invalid check."}`);
     }

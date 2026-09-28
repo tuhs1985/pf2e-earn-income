@@ -3,14 +3,14 @@ import type { IncomeCheck, Proficiency } from "./utils/earnIncome";
 import PopoverHelp from "./PopoverHelp";
 
 
-export default function CheckList({ checks, onChange, days, level, proficiency, experienced, defaultModifier }: {
+export default function CheckList({ checks, onChange, days, level, proficiency, experienced, defaultModifier, dcAdjustment }: {
   checks: IncomeCheck[]; onChange: (checks: IncomeCheck[]) => void; days: number;
-  level: number; proficiency: Proficiency; experienced: boolean; defaultModifier: string;
+  level: number; dcAdjustment: number; proficiency: Proficiency; experienced: boolean; defaultModifier: string;
 }) {
   const update = (id: number, patch: Partial<IncomeCheck>) => onChange(checks.map(row => row.id === id ? { ...row, ...patch } : row));
   const assigned = checks.reduce((sum, row) => sum + (row.days === null ? days : Number(row.days) || 0), 0);
   let dc = "—";
-  try { dc = String(taskDC(level)); } catch { /* Task input is incomplete. */ }
+  try { dc = String(taskDC(level, dcAdjustment)); } catch { /* Task input is incomplete. */ }
   return <div className="check-list">
     <div className="result-mode-row">
       <span className="check-progress" aria-live="polite">{assigned} of {days || "—"} days assigned · DC {dc}</span>
@@ -26,7 +26,7 @@ export default function CheckList({ checks, onChange, days, level, proficiency, 
       let feedback = "Enter the check to see its result.";
       let valid = false;
       try {
-        const resolved = resolveCheck({ ...row, modifier: row.modifier || defaultModifier }, level);
+        const resolved = resolveCheck({ ...row, modifier: row.modifier || defaultModifier }, level, dcAdjustment);
         const covered = row.days === null ? days : Number(row.days);
         const daily = totalEarnings(level, proficiency, { criticalSuccess: 0, success: 0, failure: 0, criticalFailure: 0, [resolved.result]: 1 }, experienced);
         feedback = `${resolved.total} vs DC ${dc} · ${resultLabels[resolved.result]}`;

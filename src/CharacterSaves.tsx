@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { type CharacterProfile, type SkillDraft, storageKey, profileKey, profileFromDraft, parseProfiles,
   serializeProfiles, mergeProfiles } from './utils/characterProfiles';
 
-type Props = { name: string; skills: SkillDraft[]; selectedSkill: number; onLoad: (p: CharacterProfile) => void };
-export default function CharacterSaves({ name, skills, selectedSkill, onLoad }: Props) {
+import { savedSheetSettings, type SheetSettings } from './utils/sheetTemplates';
+
+type Props = { name: string; skills: SkillDraft[]; selectedSkill: number; sheetSettings: SheetSettings; onSave: (p: CharacterProfile) => void; onLoad: (p: CharacterProfile) => void | boolean };
+export default function CharacterSaves({ name, skills, selectedSkill, sheetSettings, onSave, onLoad }: Props) {
   const [loaded, setLoaded] = useState<string>();
   const [picker, setPicker] = useState<'load' | 'delete' | null>(null);
   const [profiles, setProfiles] = useState<CharacterProfile[]>([]);
@@ -52,12 +54,14 @@ export default function CharacterSaves({ name, skills, selectedSkill, onLoad }: 
     }
   }
   function save() { attempt(() => {
-    const profile = profileFromDraft(name, skills, selectedSkill);
+    const settings = savedSheetSettings(sheetSettings);
+    const profile = { ...profileFromDraft(name, skills, selectedSkill), sheetLayout: settings.layout, sheetTemplates: settings.templates, activeSheetTemplate: settings.active };
     const current = read();
     const replacing = current.filter(p => profileKey(p.name) === profileKey(profile.name));
     if (replacing.length && !window.confirm(`Overwrite saved character${replacing.length > 1 ? 's' : ''}: ${replacing.map(p => p.name).join(', ')}?`)) return;
     write(mergeProfiles(current, [profile]));
     setLoaded(profileKey(profile.name));
+    onSave(profile);
     setNotice(`Saved ${profile.name}.`);
   }); }
   function openPicker(mode: 'load' | 'delete') { attempt(() => {
@@ -71,7 +75,8 @@ export default function CharacterSaves({ name, skills, selectedSkill, onLoad }: 
     const profile = current.find(p => profileKey(p.name) === selected);
     if (!profile) { setPicker(null); setNotice('That save is no longer available. Open the list again.'); return; }
     if (picker === 'load') {
-      onLoad(profile); setLoaded(selected); setPicker(null); setNotice(`Loaded ${profile.name}.`);
+      if (onLoad(profile) === false) return;
+      setLoaded(selected); setPicker(null); setNotice(`Loaded ${profile.name}.`);
     } else if (window.confirm(`Delete the saved character ${profile.name}?`)) {
       write(current.filter(p => profileKey(p.name) !== selected));
       if (loaded === selected) setLoaded(undefined);
@@ -112,7 +117,7 @@ export default function CharacterSaves({ name, skills, selectedSkill, onLoad }: 
     <input ref={input} type="file" accept=".json,application/json" aria-label="Import character backup" hidden onChange={e => void importFile(e.target.files?.[0])} />
     {picker && <div className="character-picker">
       <label>Saved character<select value={selected} onChange={e => setSelected(e.target.value)}>
-        {profiles.map(p => <option key={profileKey(p.name)} value={profileKey(p.name)}>{p.name} — {p.skills.length} skill(s)</option>)}
+        {profiles.map(p => <option key={profileKey(p.name)} value={profileKey(p.name)}>{p.name}  - {p.skills.length} skill(s)</option>)}
       </select></label>
       <div className="character-picker-actions"><button type="button" onClick={choose}>{picker === 'load' ? 'Load character' : 'Delete character'}</button>
       <button type="button" onClick={() => setPicker(null)}>Cancel</button></div>

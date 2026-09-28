@@ -5,6 +5,10 @@ import type { DiscordSummaryInput } from "./utils/earnIncome";
 import "./App.css";
 import PopoverHelp from "./PopoverHelp";
 import CheckList from "./CheckList";
+import SheetOutput from "./SheetOutput";
+import { formatSheetRow } from "./utils/sheetOutput";
+import { loadSheetSettings, sheetSettingsDirty } from "./utils/sheetTemplates";
+import { profileKey } from "./utils/characterProfiles";
 import CharacterSaves from "./CharacterSaves";
 import CharacterSkills from "./CharacterSkills";
 import type { SkillDraft } from "./utils/characterProfiles";
@@ -84,6 +88,9 @@ export default function App() {
   const proficiency = activeSkill.proficiency;
   const hasExperiencedProfessional = activeSkill.experienced;
   const [description, setDescription] = useState("");
+  const [difficulty, setDifficulty] = useState(0);
+  const [manualDCAdjustment, setManualDCAdjustment] = useState("");
+  const dcAdjustment = difficulty + Number(manualDCAdjustment);
   const [taskLevel, setTaskLevel] = useState<string>("");
   const [criticalSuccess, setCriticalSuccess] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
@@ -93,6 +100,9 @@ export default function App() {
   const [applyOneResultToAllDays, setApplyOneResultToAllDays] = useState(false);
 
   const [output, setOutput] = useState("");
+  const [sheetRow, setSheetRow] = useState("");
+  const [sheetSettings, setSheetSettings] = useState(() => loadSheetSettings());
+  const [sheetOwner, setSheetOwner] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [showInstructions, setShowInstructions] = useState(false);
@@ -123,6 +133,8 @@ export default function App() {
     description,
     taskLevel: taskLevel === "" ? 0 : Number(taskLevel),
     proficiency,
+    dcAdjustment,
+    dcAdjustmentLabel: manualDCAdjustment.trim() ? dcAdjustment : ({ [-10]: "Incredibly easy", [-5]: "Very easy", [-2]: "Easy", 0: "", 2: "Hard", 5: "Very hard", 10: "Incredibly hard" } as Record<number, string>)[difficulty],
     counts: {
       criticalSuccess: criticalSuccess === "" ? 0 : Number(criticalSuccess),
       success: success === "" ? 0 : Number(success),
@@ -144,16 +156,18 @@ export default function App() {
     }
     try {
       const safeInput = buildInput();
+      const effectiveChecks = checks.map(check => ({ ...check, modifier: check.modifier || activeSkill.modifier }));
       if (entryMode === "checks") {
-        safeInput.counts = checkCounts(checks.map(check => ({ ...check, modifier: check.modifier || activeSkill.modifier })), safeInput.taskLevel, safeInput.days);
+        safeInput.counts = checkCounts(effectiveChecks, safeInput.taskLevel, safeInput.days, safeInput.dcAdjustment);
         safeInput.applyOneResultToAllDays = false;
       }
       const summary = buildDiscordSummary(safeInput);
+      setSheetRow(formatSheetRow(safeInput, entryMode === "checks" ? effectiveChecks : undefined));
       setOutput(summary);
-      navigator.clipboard.writeText(summary).then(() => {
+      navigator.clipboard?.writeText(summary).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      });
+      }).catch(() => setCopied(false));
     } catch (err: unknown) {
       setError(err instanceof Error && err.message ? err.message : "An error occurred while generating the summary.");
       setOutput("");
@@ -182,6 +196,9 @@ export default function App() {
           {showInstructions && (
             <div className="instructions-content" id="instructions-content" style={{marginTop: "1em"}}>
               <h2>How to Use</h2>
+              <p><strong>Difficulty:</strong> Choose a PF2e difficulty adjustment, then optionally add a positive or negative whole number in Manual DC Adj. Both apply to every check, including Assurance. Payout rates remain based on task level. Normal and a blank manual adjustment use the standard DC.</p>
+              <p><strong>Sheet row:</strong> After generating, switch to Sheet row to copy tab-separated cells. Date is the downtime end date; optional Income is total earnings in gp. DC uses task level plus Difficulty and Manual DC Adj. Roll Result contains the total for a single check; multiple checks or manual counts have no single roll total.</p>
+              <p>Edit columns to rename, reorder, hide values, add empty cells, or negate numeric values. Copy with headers includes the column names. Save a character to keep up to ten named sheet templates. New starts from the current layout; Save creates it. Layout imports change the preview until saved. Character backups include all templates.</p>
               <p><strong>Check List:</strong> Enter d20 + modifier, a known roll total, or Assurance for each check.
                 Assign the number of days each check covers. Use Add Check for multiple checks.</p>
               <p><strong>Manual Counts:</strong> Use your existing result totals with either option below.</p>
@@ -222,7 +239,11 @@ export default function App() {
             />
           </label>
 
-          <CharacterSaves name={character} skills={skills} selectedSkill={selectedSkill} onLoad={profile => {
+          <CharacterSaves name={character} skills={skills} selectedSkill={selectedSkill} sheetSettings={sheetSettings} onSave={profile => {
+            setSheetOwner(profileKey(profile.name)); setSheetSettings(loadSheetSettings(profile));
+          }} onLoad={profile => {
+            if (sheetSettingsDirty(sheetSettings) && !window.confirm("Discard unsaved sheet layout changes and load this character?")) return false;
+            setSheetOwner(profileKey(profile.name)); setSheetSettings(loadSheetSettings(profile));
             setCharacter(profile.name);
             setSkills(profile.skills.map(saved => ({ ...saved, modifier: String(saved.modifier) })));
             setSelectedSkill(profile.selectedSkill);
@@ -298,8 +319,8 @@ export default function App() {
             />
           </label>
 
-          {/* Task Level and Proficiency, same line */}
-          <div className="form-row">
+          {/* Task DC controls */}
+          <div className="task-dc-row">
             <label>
               Task Level
               <input
@@ -308,6 +329,7 @@ export default function App() {
                 max={20}
                 value={taskLevel}
                 onChange={e => {
+                  setOutput(""); setError(""); setCopied(false);
                   const value = e.target.value;
                   if (value === "") setTaskLevel("");
                   else {
@@ -319,7 +341,17 @@ export default function App() {
                 placeholder="0"
               />
             </label>
-          </div>
+          <label>Difficulty<select value={difficulty} onChange={e => { setDifficulty(Number(e.target.value)); setOutput(""); setError(""); setCopied(false); }}>
+                <option value={-10}>Incredibly easy (-10)</option>
+                <option value={-5}>Very easy (-5)</option>
+                <option value={-2}>Easy (-2)</option>
+                <option value={0}></option>
+                <option value={2}>Hard (+2)</option>
+                <option value={5}>Very hard (+5)</option>
+                <option value={10}>Incredibly hard (+10)</option>
+              </select></label>
+              <label>Manual DC Adj.<input type="number" step={1} placeholder="0" value={manualDCAdjustment} onChange={e => { setManualDCAdjustment(e.target.value); setOutput(""); setError(""); setCopied(false); }} /></label>
+            </div>
 
           </fieldset>
 
@@ -330,7 +362,7 @@ export default function App() {
             <button type="button" aria-pressed={entryMode === "manual"} onClick={() => { setEntryMode("manual"); setOutput(""); setError(""); }}>Manual Counts</button>
           </div>
           {entryMode === "checks" ? <CheckList
-            checks={checks} defaultModifier={activeSkill.modifier} days={Number(days)} level={Number(taskLevel)} proficiency={proficiency}
+            checks={checks} dcAdjustment={dcAdjustment} defaultModifier={activeSkill.modifier} days={Number(days)} level={Number(taskLevel)} proficiency={proficiency}
             experienced={hasExperiencedProfessional}
             onChange={value => { setChecks(value); setOutput(""); setError(""); setCopied(false); }}
           /> : <>
@@ -436,7 +468,7 @@ export default function App() {
         )}
 
         {output && (
-          <pre className="output-pre">{output}</pre>
+          <SheetOutput summary={output} row={sheetRow} character={character} owner={sheetOwner} settings={sheetSettings} onChange={setSheetSettings} />
         )}
 
           <footer className="footer">

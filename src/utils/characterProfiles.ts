@@ -1,7 +1,10 @@
 import type { Proficiency } from './earnIncome';
+import { validateSheetLayout, type SheetLayout } from './sheetLayout';
+import { loadSheetSettings, type SheetTemplate } from './sheetTemplates';
 
 export type CharacterSkill = { name: string; modifier: number; proficiency: Proficiency; experienced: boolean };
-export type CharacterProfile = { name: string; skills: CharacterSkill[]; selectedSkill: number };
+export type CharacterProfile = { name: string; skills: CharacterSkill[]; selectedSkill: number;
+  sheetLayout?: SheetLayout; sheetTemplates?: SheetTemplate[]; activeSheetTemplate?: string };
 export type SkillDraft = Omit<CharacterSkill, 'modifier'> & { modifier: string };
 export const storageKey = 'pf2e-earn-income.characters.v1';
 export const profileKey = (name: string) => name.trim().toLowerCase();
@@ -28,7 +31,16 @@ export function validateProfile(value: unknown): CharacterProfile {
   if (typeof value.selectedSkill !== 'number' || !Number.isInteger(value.selectedSkill) || value.selectedSkill < 0 || value.selectedSkill >= skills.length) {
     throw new Error('Choose a skill for this character.');
   }
-  return { name: value.name.trim(), skills, selectedSkill: value.selectedSkill };
+  const profile: CharacterProfile = { name: value.name.trim(), skills, selectedSkill: value.selectedSkill };
+  if (value.sheetLayout !== undefined) profile.sheetLayout = validateSheetLayout(value.sheetLayout);
+  if (value.sheetTemplates !== undefined) {
+    if (typeof value.activeSheetTemplate !== 'string') throw new Error('Select a saved sheet template.');
+    const settings = loadSheetSettings({ sheetTemplates: value.sheetTemplates as SheetTemplate[], activeSheetTemplate: value.activeSheetTemplate });
+    profile.sheetTemplates = settings.templates;
+    profile.activeSheetTemplate = settings.active;
+    profile.sheetLayout = settings.layout;
+  } else if (value.activeSheetTemplate !== undefined) throw new Error('The selected sheet template is missing.');
+  return profile;
 }
 
 export function profileFromDraft(name: string, skills: SkillDraft[], selectedSkill: number): CharacterProfile {
