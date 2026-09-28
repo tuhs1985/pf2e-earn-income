@@ -452,3 +452,7 @@ footer a:hover {
   .task-dc-row > label:last-child { grid-column: 1 / -1; }
 }
 .task-dc-row { align-items: end; }
+
+.instructions-content details { border-top: 1px solid #555; padding: .65rem 0; }
+.instructions-content summary { cursor: pointer; font-weight: 600; }
+.instructions-content details p { margin: .6rem 0; }

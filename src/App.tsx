@@ -196,25 +196,33 @@ export default function App() {
           {showInstructions && (
             <div className="instructions-content" id="instructions-content" style={{marginTop: "1em"}}>
               <h2>How to Use</h2>
-              <p><strong>Difficulty:</strong> Choose a PF2e difficulty adjustment, then optionally add a positive or negative whole number in Manual DC Adj. Both apply to every check, including Assurance. Payout rates remain based on task level. Normal and a blank manual adjustment use the standard DC.</p>
-              <p><strong>Sheet row:</strong> After generating, switch to Sheet row to copy tab-separated cells. Date is the downtime end date; optional Income is total earnings in gp. DC uses task level plus Difficulty and Manual DC Adj. Roll Result contains the total for a single check; multiple checks or manual counts have no single roll total.</p>
-              <p>Edit columns to rename, reorder, hide values, add empty cells, or negate numeric values. Copy with headers includes the column names. Save a character to keep up to ten named sheet templates. New starts from the current layout; Save creates it. Layout imports change the preview until saved. Character backups include all templates.</p>
-              <p><strong>Check List:</strong> Enter d20 + modifier, a known roll total, or Assurance for each check.
-                Assign the number of days each check covers. Use Add Check for multiple checks.</p>
-              <p><strong>Manual Counts:</strong> Use your existing result totals with either option below.</p>
-              <ol>
-                <li>
-                  <strong>Per-Day Entry:</strong> Leave “Apply one result to all downtime days” unchecked. Enter the result for <b>each downtime day</b>. For 7 days, you could record 3 successes and 4 failures. The counts must add up to 7.
-                </li>
-                <li>
-                  <strong>Single-Period Entry:</strong> Check “Apply one result to all downtime days.” Enter <b>1 in exactly one result field</b> and leave the others blank or 0. For example, 1 success applies the success payout to all 7 days.
-                </li>
-              </ol>
-              <p>
-                <em>
-                  Choose the entry mode before generating your summary.
-                </em>
-              </p>
+              <details>
+                <summary>Character &amp; saves</summary>
+                <p>Enter a character name and add skills with their modifiers and proficiency. Skill Used selects the skill for this job. Enable Experienced Professional only when it applies.</p>
+                <p>Save keeps character skills and sheet templates in this browser. Load restores them; Export and Import transfer backups between devices. Confirm before replacing a matching name. Work entries and rolls are not saved.</p>
+              </details>
+              <details>
+                <summary>Downtime &amp; difficulty</summary>
+                <p>Fill any two of Start Date, Days, and End Date. Both dates count; the two most recently edited fields calculate the third. Clear Dates resets the period.</p>
+                <p>Enter the work description and task level. Difficulty and Manual DC Adj. add to the level-based DC for all checks, including Assurance. Blank values mean no adjustment. Payout rates still use task level.</p>
+              </details>
+              <details>
+                <summary>Checks &amp; manual results</summary>
+                <p>Check List accepts a d20 face plus modifier, a known roll total plus die status, or an Assurance total (10 + proficiency bonus). Rolled checks use the selected skill modifier unless overridden. Natural 1 and 20 change the outcome by one degree.</p>
+                <p>Assign Days covered to each check; their total must match the period. Add Check supports multiple checks. Each completed check previews its result and earnings.</p>
+                <p>Manual Counts accepts days for each outcome. To apply one outcome to the whole period, check Apply one result to all downtime days and enter 1 in exactly one outcome field.</p>
+              </details>
+              <details>
+                <summary>Summary &amp; sheet row</summary>
+                <p>Generate Summary displays Discord Markdown and attempts to copy it. An optional Discord rolls link makes the Results text clickable. Switch to Sheet row to copy tab-separated cells, with or without headers.</p>
+                <p>Date is the end date; Income is total gp. DC Mod shows the difficulty name, stays blank at the default, or shows the combined adjustment when a manual value is entered. Optional DC Adjustment always shows the number. Roll Result is blank when there is no single check total.</p>
+              </details>
+              <details>
+                <summary>Sheet columns &amp; templates</summary>
+                <p>Edit columns to show, hide, rename, reorder, add blank cells, or negate numeric values. Optional columns start hidden.</p>
+                <p>Save a character first to keep up to ten templates. New starts from the current layout; enter a name and use Save. Switching templates warns about unsaved edits. Default cannot be deleted.</p>
+                <p>Export layout and Import layout transfer one layout. Import changes the preview until Save is used. Character backups include all templates and the active selection.</p>
+              </details>
             </div>
           )}
         </div>
