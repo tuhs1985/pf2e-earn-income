@@ -204,7 +204,7 @@ export default function App() {
               <details>
                 <summary>Downtime &amp; difficulty</summary>
                 <p>Fill any two of Start Date, Days, and End Date. Both dates count; the two most recently edited fields calculate the third. Clear Dates resets the period.</p>
-                <p>Enter the work description and task level. Difficulty and Manual DC Adj. add to the level-based DC for all checks, including Assurance. Blank values mean no adjustment. Payout rates still use task level.</p>
+                <p>Enter the work description and task level. Difficulty and Manual Adj. add to the level-based DC for all checks, including Assurance. Blank values mean no adjustment. Payout rates still use task level.</p>
               </details>
               <details>
                 <summary>Checks &amp; manual results</summary>
@@ -358,7 +358,7 @@ export default function App() {
                 <option value={5}>Very hard (+5)</option>
                 <option value={10}>Incredibly hard (+10)</option>
               </select></label>
-              <label>Manual DC Adj.<input type="number" step={1} placeholder="0" value={manualDCAdjustment} onChange={e => { setManualDCAdjustment(e.target.value); setOutput(""); setError(""); setCopied(false); }} /></label>
+              <label>Manual Adj.<input type="number" step={1} placeholder="0" value={manualDCAdjustment} onChange={e => { setManualDCAdjustment(e.target.value); setOutput(""); setError(""); setCopied(false); }} /></label>
             </div>
 
           </fieldset>

@@ -37,13 +37,13 @@ export default function CheckList({ checks, onChange, days, level, proficiency, 
       } catch { /* Display guidance until the row is complete; submit gives precise errors. */ }
       return <fieldset className="check-card" key={row.id}>
         <legend>Check {index + 1}</legend>
-        <div className="check-pair check-method-row">
+        <div className="check-pair">
         <label>Days covered<input type="number" required min={1} value={row.days === null ? days || "" : row.days} onChange={e => update(row.id, { days: e.target.value })} /></label>
         <label>Method<select value={row.method} onChange={e => update(row.id, { method: e.target.value as IncomeCheck["method"], total: "", natural: "normal" })}>
           <option value="rolled">d20 + modifier</option><option value="total">Known roll total</option><option value="assurance">Assurance</option>
         </select></label>
         </div>
-        {row.method === "rolled" ? <div className="form-row">
+        {row.method === "rolled" ? <div className="check-pair">
           <label>d20 face<input type="number" required min={1} max={20} value={row.die} placeholder="1–20" onChange={e => update(row.id, { die: e.target.value })} /></label>
           <label>Modifier override<input type="number" value={row.modifier} placeholder={defaultModifier || "Set skill modifier"} onChange={e => update(row.id, { modifier: e.target.value })} /></label>
         </div> : <div className={row.method === "total" ? "check-pair" : undefined}>

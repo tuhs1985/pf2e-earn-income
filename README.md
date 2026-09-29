@@ -53,7 +53,7 @@ Dates use calendar-day arithmetic, including across daylight-saving changes. **C
 
 Select the skill and proficiency under Character, then enter a description of the work and the task level (0–20) under Downtime. A blank task level is treated as level 0.
 
-**Difficulty** offers the PF2e adjustments: incredibly easy (−10), very easy (−5), easy (−2), hard (+2), very hard (+5), and incredibly hard (+10). The blank selection means no adjustment. **Manual DC Adj.** adds a positive or negative whole number on top of it. These change the DC for all checks, including Assurance; payout rates remain based on task level.
+**Difficulty** offers the PF2e adjustments: incredibly easy (−10), very easy (−5), easy (−2), hard (+2), very hard (+5), and incredibly hard (+10). The blank selection means no adjustment. **Manual Adj.** adds a positive or negative whole number on top of it. These change the DC for all checks, including Assurance; payout rates remain based on task level.
 
 Select **Experienced Professional (Lore only)** when applicable. The calculator upgrades critical failures to failure payouts and doubles original failure payouts for expert or higher proficiency. Upgraded critical failures do not receive the doubled payout. The checkbox relies on you to confirm that the feat applies to the skill.
 
@@ -106,7 +106,7 @@ Clipboard access depends on browser permissions and a secure context such as HTT
 
 After generating a result, select **Sheet row**. Copy one tab-separated data row, or include headers. The mobile preview lists each column beside its value.
 
-Default columns are Activity, Date, Character, Description, Status, Task Level, DC Mod, DC, Assured?, and Roll Result. Date uses the downtime end date; DC comes from task level plus the selected PF2e difficulty and additive Manual DC Adj. These adjustments apply to rolled checks and Assurance; payout rates still use task level. DC Mod is blank at the default difficulty. Otherwise it shows the difficulty name, or the combined numeric adjustment when Manual DC Adj. is entered. Optional DC Adjustment always gives the combined number. Other optional columns include total Income (numeric gp), the Discord roll link, Skill, Proficiency, Days, and Start date. Roll Result is populated for a single check; multiple checks and manual counts have no single roll total.
+Default columns are Activity, Date, Character, Description, Status, Task Level, DC Mod, DC, Assured?, and Roll Result. Date uses the downtime end date; DC comes from task level plus the selected PF2e difficulty and additive Manual Adj. These adjustments apply to rolled checks and Assurance; payout rates still use task level. DC Mod is blank at the default difficulty. Otherwise it shows the difficulty name, or the combined numeric adjustment when Manual Adj. is entered. Optional DC Adjustment always gives the combined number. Other optional columns include total Income (numeric gp), the Discord roll link, Skill, Proficiency, Days, and Start date. Roll Result is populated for a single check; multiple checks and manual counts have no single roll total.
 
 #### Columns and templates
 
@@ -114,7 +114,7 @@ Default columns are Activity, Date, Character, Description, Status, Task Level, 
 
 ## Scope
 
-All check rows use the same task level, DC adjustments, proficiency, skill, and feat setting. Use separate summaries for different jobs or proficiency settings. The tool calculates payouts; the GM determines job availability, permitted duration, and any custom DC or other special rules. Use Manual DC Adj. for additional GM adjustments.
+All check rows use the same task level, DC adjustments, proficiency, skill, and feat setting. Use separate summaries for different jobs or proficiency settings. The tool calculates payouts; the GM determines job availability, permitted duration, and any custom DC or other special rules. Use Manual Adj. for additional GM adjustments.
 
 The site runs entirely in the browser. It includes a PWA manifest and service worker for installation and cached offline use after an initial load in a supported browser.
 

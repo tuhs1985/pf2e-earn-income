@@ -403,9 +403,6 @@ footer a:hover {
   align-items: end;
   gap: .5rem;
 }
-.check-method-row {
-  grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr);
-}
 .check-progress { font-size: .85rem; color: #ccc; }
 .check-card {
   min-width: 0;
@@ -432,27 +429,58 @@ footer a:hover {
 .character-save-buttons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
 .form-card .character-save-buttons button,
 .form-card .character-picker-actions button {
-  min-height: 44px; padding: 4px 2px; margin: 0; font-size: .8rem;
+  min-height: 26px; padding: 2px; margin: 0; font-size: .8rem; line-height: 1.2;
   background: #333; color: #eee; border: 1px solid #777; border-radius: 5px;
 }
 .character-save-note { font-size: .85rem; overflow-wrap: anywhere; margin: .3rem 0; }
 .character-save-note:empty { display: none; }
 .character-picker { min-width: 0; padding: 4px 0; }
+.form-card .character-picker select { width: 100%; min-width: 0; min-height: 26px; padding: 2px 4px; }
 .character-picker-actions { display: flex; gap: .5rem; }
 .character-picker-actions button { flex: 1; min-width: 0; }
 .character-picker-actions button:disabled { opacity: .45; }
 .character-saves button:focus-visible { outline: 2px solid #8dc8ff; outline-offset: 2px; }
 .character-skills { min-width: 0; }
 
-.task-dc-row { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: .6rem; }
+.task-dc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(13rem, 2fr) minmax(0, 1fr); gap: .6rem; }
 .task-dc-row > label { min-width: 0; }
 .task-dc-row input, .task-dc-row select { min-width: 0; width: 100%; box-sizing: border-box; }
-@media (max-width: 380px) {
-  .task-dc-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
-  .task-dc-row > label:last-child { grid-column: 1 / -1; }
+@media (max-width: 480px) {
+  .task-dc-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .task-dc-row > label:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
 }
 .task-dc-row { align-items: end; }
 
 .instructions-content details { border-top: 1px solid #555; padding: .65rem 0; }
 .instructions-content summary { cursor: pointer; font-weight: 600; }
 .instructions-content details p { margin: .6rem 0; }
+
+/* Shared compact sizing for actions; mode tabs, help icons and the primary submit retain their roles. */
+.app-container { --action-height: 26px; --action-gap: 4px; }
+.app-container button[type="button"]:not([aria-pressed]):not(.popover-help-trigger) {
+  box-sizing: border-box;
+  min-height: var(--action-height);
+  padding: 2px 6px;
+  font-size: .8rem;
+  line-height: 1.2;
+}
+.app-container .character-save-buttons,
+.app-container .character-picker-actions,
+.app-container .check-allocation,
+.app-container .sheet-layout-actions,
+.app-container .sheet-layout-move,
+.app-container .sheet-template-row,
+.app-container .sheet-template-new,
+.app-container .output-controls { gap: var(--action-gap); }
+.app-container .character-save-buttons button { padding-inline: 2px; }
+
+/* One compact gap between field rows; block controls avoid textarea baseline space. */
+.form-card { --field-row-gap: 4px; }
+.form-card label { margin-bottom: var(--field-row-gap); }
+.form-card input:not([type="checkbox"]):not([type="file"]),
+.form-card select,
+.form-card textarea { display: block; }
+.form-card .form-row { margin-bottom: 0; row-gap: 0; }
+.form-card .period-row,
+.form-card .task-dc-row,
+.form-card .check-pair { row-gap: 0; }
