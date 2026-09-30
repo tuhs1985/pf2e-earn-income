@@ -15,7 +15,13 @@ test('new names preserve old profiles; matching names replace only their profile
 });
 test('strict import and draft validation rejects malformed data', () => {
   for (const text of ['oops', 'null', JSON.stringify({version:1,characters:[a]}), JSON.stringify({app:'pf2e-crafting',version:1,characters:[a]})]) assert.throws(() => parseProfiles(text));
-  for (const bad of [{...a, selectedSkill: 2}, {...a,skills:[]}, {...a,skills:[a.skills[0],a.skills[0]]}, {...a,skills:[{...a.skills[0],modifier:'12'}]}, {...a,skills:[{...a.skills[0],experienced:'true'}]}]) assert.throws(() => validateProfile(bad));
+  for (const bad of [{...a, selectedSkill: 2}, {...a,skills:[]}, {...a,skills:[a.skills[0],a.skills[0]]}, {...a,skills:[{...a.skills[0],modifier:'12+oops'}]}, {...a,skills:[{...a.skills[0],experienced:'true'}]}]) assert.throws(() => validateProfile(bad));
   assert.throws(() => serializeProfiles([a,{...a,name:' ALICE '}]));
   assert.throws(() => profileFromDraft('Alice',[{...a.skills[0],modifier:''}],0));
+});
+
+test('modifier expressions survive character backups and numeric saves remain compatible', () => {
+ const profile = profileFromDraft('Alice', [{...a.skills[0], modifier:'9+1[item]-2[penalty]'}], 0);
+ assert.equal(parseProfiles(serializeProfiles([profile]))[0].skills[0].modifier, '9+1[item]-2[penalty]');
+ assert.equal(parseProfiles(serializeProfiles([a]))[0].skills[0].modifier, 12);
 });

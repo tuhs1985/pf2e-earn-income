@@ -45,7 +45,7 @@ export default function CheckList({ checks, onChange, days, level, proficiency, 
         </div>
         {row.method === "rolled" ? <div className="check-pair">
           <label>d20 face<input type="number" required min={1} max={20} value={row.die} placeholder="1–20" onChange={e => update(row.id, { die: e.target.value })} /></label>
-          <label>Modifier override<input type="number" value={row.modifier} placeholder={defaultModifier || "Set skill modifier"} onChange={e => update(row.id, { modifier: e.target.value })} /></label>
+          <label>Modifier override<input type="text" maxLength={200} value={row.modifier} placeholder={defaultModifier || "Set skill modifier"} onChange={e => update(row.id, { modifier: e.target.value })} /></label>
         </div> : <div className={row.method === "total" ? "check-pair" : undefined}>
           <label>{row.method === "assurance" ? "Assurance total" : "Roll total"}<input type="number" required value={row.total} placeholder={row.method === "assurance" ? "10 + proficiency bonus" : "Total including modifiers"} onChange={e => update(row.id, { total: e.target.value })} /></label>
           {row.method === "total" && <label>Die status<select value={row.natural} onChange={e => update(row.id, { natural: e.target.value as IncomeCheck["natural"] })}>

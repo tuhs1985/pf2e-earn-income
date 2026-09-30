@@ -484,3 +484,6 @@ footer a:hover {
 .form-card .period-row,
 .form-card .task-dc-row,
 .form-card .check-pair { row-gap: 0; }
+
+.modifier-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem; }
+.modifier-total { font-size: .75rem; color: #bbb; }

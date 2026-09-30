@@ -23,6 +23,8 @@ A mobile-friendly Pathfinder Second Edition downtime calculator that turns work 
 
 Under Character, choose **Skill Used** for the current job. Edit its name, modifier, proficiency, and Experienced Professional setting. **Add Skill** and **Remove Skill** manage the character's skill list. One selected skill applies to all checks in a summary.
 
+Skill modifiers and per-check overrides accept addition/subtraction with optional bracketed notes, such as `9+1[item]` or `12-2[penalty]`. The total appears beside Skill modifier; saves preserve the expression. Notes do not enforce bonus stacking rules. Use whole-number terms and a total from −1000 to 1000. Existing numeric saves still load. Assurance is unchanged.
+
 **Save, Load, Delete, Export, Import** appear directly below the character name:
 
 - Save stores the character name, skill list, selected skill, sheet templates, and active template in this browser. New names create new profiles; matching names (ignoring case and surrounding spaces) require confirmation before replacement.

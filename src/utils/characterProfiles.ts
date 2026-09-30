@@ -1,8 +1,9 @@
+import { parseSkillModifier } from './earnIncome';
 import type { Proficiency } from './earnIncome';
 import { validateSheetLayout, type SheetLayout } from './sheetLayout';
 import { loadSheetSettings, type SheetTemplate } from './sheetTemplates';
 
-export type CharacterSkill = { name: string; modifier: number; proficiency: Proficiency; experienced: boolean };
+export type CharacterSkill = { name: string; modifier: number | string; proficiency: Proficiency; experienced: boolean };
 export type CharacterProfile = { name: string; skills: CharacterSkill[]; selectedSkill: number;
   sheetLayout?: SheetLayout; sheetTemplates?: SheetTemplate[]; activeSheetTemplate?: string };
 export type SkillDraft = Omit<CharacterSkill, 'modifier'> & { modifier: string };
@@ -20,11 +21,12 @@ export function validateProfile(value: unknown): CharacterProfile {
   }
   const skills = value.skills.map((skill): CharacterSkill => {
     if (!isRecord(skill) || typeof skill.name !== 'string' || !skill.name.trim() || skill.name.length > 100 ||
-      typeof skill.modifier !== 'number' || !Number.isSafeInteger(skill.modifier) || Math.abs(skill.modifier) > 1000 ||
+      (typeof skill.modifier !== 'number' && typeof skill.modifier !== 'string') ||
       typeof skill.proficiency !== 'string' || !['trained', 'expert', 'master', 'legendary'].includes(skill.proficiency) ||
       typeof skill.experienced !== 'boolean') {
       throw new Error('Each skill needs a name, a whole modifier from -1000 to 1000, a proficiency rank, and a valid feat setting.');
     }
+    parseSkillModifier(String(skill.modifier));
     return { name: skill.name.trim(), modifier: skill.modifier, proficiency: skill.proficiency as Proficiency, experienced: skill.experienced };
   });
   if (new Set(skills.map(skill => profileKey(skill.name))).size !== skills.length) throw new Error('Use a different name for each skill.');
@@ -44,7 +46,7 @@ export function validateProfile(value: unknown): CharacterProfile {
 }
 
 export function profileFromDraft(name: string, skills: SkillDraft[], selectedSkill: number): CharacterProfile {
-  return validateProfile({ name, selectedSkill, skills: skills.map(skill => ({ ...skill, modifier: skill.modifier.trim() ? Number(skill.modifier) : NaN })) });
+  return validateProfile({ name, selectedSkill, skills: skills.map(skill => ({ ...skill, modifier: /^[-+]?\d+$/.test(skill.modifier.trim()) ? Number(skill.modifier) : skill.modifier })) });
 }
 
 export function parseProfiles(text: string): CharacterProfile[] {

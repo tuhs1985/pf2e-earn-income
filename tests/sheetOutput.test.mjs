@@ -81,3 +81,11 @@ test('optional numeric DC Adjustment defaults hidden and supports negative forma
  const numeric=layout.map(c=>({...c,enabled:c.id===16,...(c.id===16?{negative:true}:{})}));
  assert.equal(l.formatLayoutRow(formatSheetRow({...input,dcAdjustment:3}),numeric),'-3');
 });
+
+test('modifier expressions resolve safely and preserve natural die rules',()=>{
+ for (const [text,value] of [['9+1[item]',10],[' 9 + 1[item bonus] - 2[penalty] ',8],['-2+1',-1],['0',0]]) assert.equal(e.parseSkillModifier(text),value);
+ for (const text of ['', '9+', '9++1','9 1','9*2','9+1[]','9+1[x','9+1[[x]]','1.5','1001','alert(1)','9;process.exit()']) assert.throws(()=>e.parseSkillModifier(text));
+ assert.equal(e.resolveCheck({...e.newCheck(1),die:'10',modifier:'9+1[item]'},1).total,20);
+ assert.equal(e.resolveCheck({...e.newCheck(1),die:'20',modifier:'9+1[item]'},1).result,'criticalSuccess');
+ assert.equal(e.resolveCheck({...e.newCheck(1),method:'assurance',total:'15',modifier:'invalid'},1).total,15);
+});

@@ -319,7 +319,7 @@ export function resolveCheck(check: IncomeCheck, level: number, dcAdjustment = 0
   if (check.method === "rolled") {
     const die = integer(check.die, "d20 face");
     if (die < 1 || die > 20) throw new Error("The d20 face must be from 1 to 20.");
-    total = die + integer(check.modifier, "skill modifier");
+    total = die + parseSkillModifier(check.modifier);
     natural = die;
   } else {
     total = integer(check.total, check.method === "assurance" ? "Assurance total" : "roll total");
@@ -348,3 +348,23 @@ export function checkCounts(checks: IncomeCheck[], level: number, days: number, 
 }
 
 export const newCheck = (id: number): IncomeCheck => ({ id, method: "rolled", die: "", modifier: "", total: "", natural: "normal", days: null });
+
+// Parse only signed integer terms and optional annotation text; never evaluate code.
+export function parseSkillModifier(expression: string): number {
+  const invalid = () => new Error("Use a modifier such as 9+1[item] or 12-2[penalty] (total -1000 to 1000).");
+  if (!expression.trim() || expression.length > 200 || /[\p{Cc}]/u.test(expression)) throw invalid();
+  const term = /\s*([+-]?)\s*(\d+)\s*(?:\[([^\x5b\x5d]+)\])?\s*/y;
+  let position = 0;
+  let total = 0;
+  while (position < expression.length) {
+    term.lastIndex = position;
+    const match = term.exec(expression);
+    if (!match || (position > 0 && !match[1]) || (match[3] !== undefined && !match[3].trim())) throw invalid();
+    const value = Number(match[2]);
+    if (!Number.isSafeInteger(value) || value > 1000) throw invalid();
+    total += (match[1] === '-' ? -1 : 1) * value;
+    position = term.lastIndex;
+  }
+  if (Math.abs(total) > 1000) throw invalid();
+  return total;
+}
